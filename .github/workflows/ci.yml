@@ -43,19 +43,6 @@ jobs:
     name: 🧪 E2E Tests
     runs-on: ubuntu-24.04
     needs: lint
-    services:
-      minio:
-        image: minio/minio:latest
-        ports:
-          - 9000:9000
-        env:
-          MINIO_ROOT_USER: minioadmin
-          MINIO_ROOT_PASSWORD: minioadmin
-        options: >-
-          --health-cmd "curl -f http://localhost:9000/minio/health/live || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - name: Checkout
@@ -69,6 +56,30 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Start MinIO container
+        run: |
+          docker run -d \
+            --name minio \
+            -p 9000:9000 \
+            -e MINIO_ROOT_USER=minioadmin \
+            -e MINIO_ROOT_PASSWORD=minioadmin \
+            minio/minio:latest server /data
+
+      - name: Wait for MinIO to be ready
+        run: |
+          echo "Waiting for MinIO to be ready..."
+          for i in {1..30}; do
+            if curl -sf http://localhost:9000/minio/health/live; then
+              echo "✅ MinIO is ready!"
+              exit 0
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 2
+          done
+          echo "❌ MinIO failed to start"
+          docker logs minio
+          exit 1
 
       - name: Create MinIO bucket
         run: |
@@ -93,6 +104,10 @@ jobs:
           RATE_LIMIT_WINDOW_MS: "60000"
           RATE_LIMIT_MAX_REQUESTS: "100"
           CORS_ORIGINS: "*"
+
+      - name: Stop MinIO container
+        if: always()
+        run: docker stop minio && docker rm minio || true
 
   # ==========================================
   # STAGE 3: Build Docker Image
