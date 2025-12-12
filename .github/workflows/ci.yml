@@ -252,6 +252,13 @@ jobs:
     needs: [lint, test, build, security-scan, deploy]
     if: success() && github.event_name != 'pull_request'
     steps:
+      - name: Prepare commit message
+        id: commit_msg
+        run: |
+          # Get first line of commit message and escape special characters for JSON
+          MSG=$(echo "${{ github.event.head_commit.message }}" | head -n 1 | sed 's/"/\\"/g' | sed "s/'/\\'/g")
+          echo "message=$MSG" >> $GITHUB_OUTPUT
+
       - name: Send Slack notification
         uses: slackapi/slack-github-action@v1.27.0
         with:
@@ -292,7 +299,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Message:* ${{ github.event.head_commit.message }}"
+                    "text": "*Message:* ${{ steps.commit_msg.outputs.message }}"
                   }
                 },
                 {
@@ -320,6 +327,13 @@ jobs:
     needs: [lint, test, build, security-scan, deploy]
     if: failure()
     steps:
+      - name: Prepare commit message
+        id: commit_msg
+        run: |
+          # Get first line of commit message and escape special characters for JSON
+          MSG=$(echo "${{ github.event.head_commit.message }}" | head -n 1 | sed 's/"/\\"/g' | sed "s/'/\\'/g")
+          echo "message=$MSG" >> $GITHUB_OUTPUT
+
       - name: Send Slack notification
         uses: slackapi/slack-github-action@v1.27.0
         with:
@@ -360,7 +374,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Message:* ${{ github.event.head_commit.message }}"
+                    "text": "*Message:* ${{ steps.commit_msg.outputs.message }}"
                   }
                 },
                 {
