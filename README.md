@@ -224,7 +224,18 @@ curl -X POST http://localhost:3000/v1/download/check \
 
 ---
 
-### Challenge 2: Long-Running Download Architecture Design
+### Challenge 2: Long-Running Download Architecture Design ✅ COMPLETE
+
+#### Implementation Status
+
+✅ **Async Job Queue** - BullMQ with Redis  
+✅ **Worker Process** - Background job processing  
+✅ **SSE Streaming** - Real-time updates  
+✅ **Polling Endpoint** - Fallback for SSE  
+✅ **Job Status Tracking** - Redis persistence  
+✅ **Direct Download** - Presigned S3 URLs  
+
+**See**: `CHALLENGE-2-COMPLETE.md` and `ASYNC-IMPLEMENTATION.md` for full details.
 
 #### The Problem
 
@@ -256,11 +267,37 @@ curl -X POST http://localhost:3000/v1/download/start \
 # But your request times out at 30 seconds (REQUEST_TIMEOUT_MS)
 ```
 
-#### Your Mission
+#### Solution Implemented
 
-Write a **complete implementation plan** that addresses how to integrate this download microservice with a fullstack application while handling variable download times gracefully.
+The async download architecture has been fully implemented with:
 
-#### Deliverables
+**New API Endpoints:**
+- `POST /v1/download/initiate` - Start async job (returns jobId immediately)
+- `GET /v1/download/status/:jobId` - Poll job status
+- `GET /v1/download/stream/:jobId` - SSE streaming for real-time updates
+- `GET /v1/download/:jobId` - Direct download redirect
+
+**Infrastructure:**
+- Redis for job queue and status tracking
+- BullMQ for reliable job processing
+- Worker process for background processing
+- Presigned S3 URLs for direct downloads
+
+**Testing:**
+```bash
+# Start services
+npm run docker:dev
+
+# Test async API
+npm run test:async
+
+# Or manually:
+curl -X POST http://localhost:3000/v1/download/initiate \
+  -H "Content-Type: application/json" \
+  -d '{"file_ids": [70000, 70007, 70014]}'
+```
+
+#### Original Requirements
 
 Create a document (`ARCHITECTURE.md`) that includes:
 

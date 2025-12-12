@@ -1,4 +1,3 @@
-import { HeadObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { serve } from "@hono/node-server";
 import type { ServerType } from "@hono/node-server";
 import { httpInstrumentationMiddleware } from "@hono/otel";
@@ -13,57 +12,12 @@ import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
 import { timeout } from "hono/timeout";
 import { rateLimiter } from "hono-rate-limiter";
-
-// Helper for optional URL that treats empty string as undefined
-const optionalUrl = z
-  .string()
-  .optional()
-  .transform((val) => (val === "" ? undefined : val))
-  .pipe(z.url().optional());
-
-// Environment schema
-const EnvSchema = z.object({
-  NODE_ENV: z
-    .enum(["development", "production", "test"])
-    .default("development"),
-  PORT: z.coerce.number().int().min(1).max(65535).default(3000),
-  S3_REGION: z.string().min(1).default("us-east-1"),
-  S3_ACCESS_KEY_ID: z.string().optional(),
-  S3_SECRET_ACCESS_KEY: z.string().optional(),
-  S3_ENDPOINT: optionalUrl,
-  S3_BUCKET_NAME: z.string().default(""),
-  S3_FORCE_PATH_STYLE: z.coerce.boolean().default(false),
-  SENTRY_DSN: optionalUrl,
-  OTEL_EXPORTER_OTLP_ENDPOINT: optionalUrl,
-  REQUEST_TIMEOUT_MS: z.coerce.number().int().min(1000).default(30000),
-  RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1000).default(60000),
-  RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().min(1).default(100),
-  CORS_ORIGINS: z
-    .string()
-    .default("*")
-    .transform((val) => (val === "*" ? "*" : val.split(","))),
-  // Download delay simulation (in milliseconds)
-  DOWNLOAD_DELAY_MIN_MS: z.coerce.number().int().min(0).default(10000), // 10 seconds
-  DOWNLOAD_DELAY_MAX_MS: z.coerce.number().int().min(0).default(200000), // 200 seconds
-  DOWNLOAD_DELAY_ENABLED: z.coerce.boolean().default(true),
-});
-
-// Parse and validate environment
-const env = EnvSchema.parse(process.env);
-
-// S3 Client
-const s3Client = new S3Client({
-  region: env.S3_REGION,
-  ...(env.S3_ENDPOINT && { endpoint: env.S3_ENDPOINT }),
-  ...(env.S3_ACCESS_KEY_ID &&
-    env.S3_SECRET_ACCESS_KEY && {
-      credentials: {
-        accessKeyId: env.S3_ACCESS_KEY_ID,
-        secretAccessKey: env.S3_SECRET_ACCESS_KEY,
-      },
-    }),
-  forcePathStyle: env.S3_FORCE_PATH_STYLE,
-});
+import { streamSSE } from "hono/streaming";
+import { env } from "./config.ts";
+import { checkS3Availability, checkS3Health, closeS3Client } from "./s3.ts";
+import { closeRedis, redis } from "./redis.ts";
+import { addDownloadJob, closeQueue } from "./queue.ts";
+import { createJobStatus, getJobStatus } from "./job-status.ts";
 
 // Initialize OpenTelemetry SDK
 const otelSDK = new NodeSDK({
@@ -76,7 +30,7 @@ otelSDK.start();
 
 const app = new OpenAPIHono();
 
-// Request ID middleware - adds unique ID to each request
+// Request ID middleware
 app.use(async (c, next) => {
   const requestId = c.req.header("x-request-id") ?? crypto.randomUUID();
   c.set("requestId", requestId);
@@ -84,7 +38,7 @@ app.use(async (c, next) => {
   await next();
 });
 
-// Security headers middleware (helmet-like)
+// Security headers middleware
 app.use(secureHeaders());
 
 // CORS middleware
@@ -102,8 +56,14 @@ app.use(
   }),
 );
 
-// Request timeout middleware
-app.use(timeout(env.REQUEST_TIMEOUT_MS));
+// Request timeout middleware (except for SSE endpoints)
+app.use("*", async (c, next) => {
+  if (c.req.path.includes("/stream")) {
+    await next();
+  } else {
+    await timeout(env.REQUEST_TIMEOUT_MS)(c, next);
+  }
+});
 
 // Rate limiting middleware
 app.use(
@@ -132,7 +92,7 @@ app.use(
   }),
 );
 
-// Error response schema for OpenAPI
+// Error response schema
 const ErrorResponseSchema = z
   .object({
     error: z.string(),
@@ -141,7 +101,7 @@ const ErrorResponseSchema = z
   })
   .openapi("ErrorResponse");
 
-// Error handler with Sentry
+// Error handler
 app.onError((err, c) => {
   c.get("sentry").captureException(err);
   const requestId = c.get("requestId") as string | undefined;
@@ -170,6 +130,7 @@ const HealthResponseSchema = z
     status: z.enum(["healthy", "unhealthy"]),
     checks: z.object({
       storage: z.enum(["ok", "error"]),
+      redis: z.enum(["ok", "error"]),
     }),
   })
   .openapi("HealthResponse");
@@ -188,10 +149,27 @@ const DownloadInitiateRequestSchema = z
 const DownloadInitiateResponseSchema = z
   .object({
     jobId: z.string().openapi({ description: "Unique job identifier" }),
-    status: z.enum(["queued", "processing"]),
+    status: z.enum(["queued"]),
     totalFileIds: z.number().int(),
+    estimatedTimeSeconds: z.number().int().optional(),
   })
   .openapi("DownloadInitiateResponse");
+
+const JobStatusResponseSchema = z
+  .object({
+    jobId: z.string(),
+    status: z.enum(["queued", "processing", "completed", "failed"]),
+    progress: z.number().int().min(0).max(100),
+    completedFiles: z.number().int(),
+    totalFiles: z.number().int(),
+    downloadUrl: z.string().nullable(),
+    size: z.number().int().nullable(),
+    error: z.string().nullable(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+    completedAt: z.string().nullable(),
+  })
+  .openapi("JobStatusResponse");
 
 const DownloadCheckRequestSchema = z
   .object({
@@ -219,116 +197,6 @@ const DownloadCheckResponseSchema = z
       .openapi({ description: "File size in bytes" }),
   })
   .openapi("DownloadCheckResponse");
-
-const DownloadStartRequestSchema = z
-  .object({
-    file_id: z
-      .number()
-      .int()
-      .min(10000)
-      .max(100000000)
-      .openapi({ description: "File ID to download (10K to 100M)" }),
-  })
-  .openapi("DownloadStartRequest");
-
-const DownloadStartResponseSchema = z
-  .object({
-    file_id: z.number().int(),
-    status: z.enum(["completed", "failed"]),
-    downloadUrl: z
-      .string()
-      .nullable()
-      .openapi({ description: "Presigned download URL if successful" }),
-    size: z
-      .number()
-      .int()
-      .nullable()
-      .openapi({ description: "File size in bytes" }),
-    processingTimeMs: z
-      .number()
-      .int()
-      .openapi({ description: "Time taken to process the download in ms" }),
-    message: z.string().openapi({ description: "Status message" }),
-  })
-  .openapi("DownloadStartResponse");
-
-// Input sanitization for S3 keys - prevent path traversal
-const sanitizeS3Key = (fileId: number): string => {
-  // Ensure fileId is a valid integer within bounds (already validated by Zod)
-  const sanitizedId = Math.floor(Math.abs(fileId));
-  // Construct safe S3 key without user-controlled path components
-  return `downloads/${String(sanitizedId)}.zip`;
-};
-
-// S3 health check
-const checkS3Health = async (): Promise<boolean> => {
-  if (!env.S3_BUCKET_NAME) return true; // Mock mode
-  try {
-    // Use a lightweight HEAD request on a known path
-    const command = new HeadObjectCommand({
-      Bucket: env.S3_BUCKET_NAME,
-      Key: "__health_check_marker__",
-    });
-    await s3Client.send(command);
-    return true;
-  } catch (err) {
-    // NotFound is fine - bucket is accessible
-    if (err instanceof Error && err.name === "NotFound") return true;
-    // AccessDenied or other errors indicate connection issues
-    return false;
-  }
-};
-
-// S3 availability check
-const checkS3Availability = async (
-  fileId: number,
-): Promise<{
-  available: boolean;
-  s3Key: string | null;
-  size: number | null;
-}> => {
-  const s3Key = sanitizeS3Key(fileId);
-
-  // If no bucket configured, use mock mode
-  if (!env.S3_BUCKET_NAME) {
-    const available = fileId % 7 === 0;
-    return {
-      available,
-      s3Key: available ? s3Key : null,
-      size: available ? Math.floor(Math.random() * 10000000) + 1000 : null,
-    };
-  }
-
-  try {
-    const command = new HeadObjectCommand({
-      Bucket: env.S3_BUCKET_NAME,
-      Key: s3Key,
-    });
-    const response = await s3Client.send(command);
-    return {
-      available: true,
-      s3Key,
-      size: response.ContentLength ?? null,
-    };
-  } catch {
-    return {
-      available: false,
-      s3Key: null,
-      size: null,
-    };
-  }
-};
-
-// Random delay helper for simulating long-running downloads
-const getRandomDelay = (): number => {
-  if (!env.DOWNLOAD_DELAY_ENABLED) return 0;
-  const min = env.DOWNLOAD_DELAY_MIN_MS;
-  const max = env.DOWNLOAD_DELAY_MAX_MS;
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-};
-
-const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, ms));
 
 // Routes
 const rootRoute = createRoute({
@@ -381,13 +249,23 @@ app.openapi(rootRoute, (c) => {
 
 app.openapi(healthRoute, async (c) => {
   const storageHealthy = await checkS3Health();
-  const status = storageHealthy ? "healthy" : "unhealthy";
-  const httpStatus = storageHealthy ? 200 : 503;
+  let redisHealthy = false;
+  try {
+    await redis.ping();
+    redisHealthy = true;
+  } catch {
+    redisHealthy = false;
+  }
+
+  const status = storageHealthy && redisHealthy ? "healthy" : "unhealthy";
+  const httpStatus = status === "healthy" ? 200 : 503;
+
   return c.json(
     {
       status,
       checks: {
         storage: storageHealthy ? "ok" : "error",
+        redis: redisHealthy ? "ok" : "error",
       },
     },
     httpStatus,
@@ -399,8 +277,9 @@ const downloadInitiateRoute = createRoute({
   method: "post",
   path: "/v1/download/initiate",
   tags: ["Download"],
-  summary: "Initiate download job",
-  description: "Initiates a download job for multiple IDs",
+  summary: "Initiate async download job",
+  description:
+    "Initiates an asynchronous download job and returns immediately with a jobId. Use /v1/download/status/:jobId to poll for status or /v1/download/stream/:jobId for real-time updates.",
   request: {
     body: {
       content: {
@@ -438,6 +317,230 @@ const downloadInitiateRoute = createRoute({
   },
 });
 
+app.openapi(downloadInitiateRoute, async (c) => {
+  const { file_ids } = c.req.valid("json");
+  const jobId = crypto.randomUUID();
+
+  // Create job status in Redis
+  await createJobStatus(jobId, file_ids);
+
+  // Add job to queue
+  await addDownloadJob(jobId, file_ids);
+
+  // Estimate time based on file count (rough estimate)
+  const estimatedTimeSeconds = Math.ceil(file_ids.length * 2);
+
+  return c.json(
+    {
+      jobId,
+      status: "queued" as const,
+      totalFileIds: file_ids.length,
+      estimatedTimeSeconds,
+    },
+    200,
+  );
+});
+
+// Job status polling endpoint
+const downloadStatusRoute = createRoute({
+  method: "get",
+  path: "/v1/download/status/:jobId",
+  tags: ["Download"],
+  summary: "Get job status (polling)",
+  description:
+    "Polls the status of a download job. Use this as a fallback when SSE is not available.",
+  request: {
+    params: z.object({
+      jobId: z.string().uuid(),
+    }),
+  },
+  responses: {
+    200: {
+      description: "Job status",
+      content: {
+        "application/json": {
+          schema: JobStatusResponseSchema,
+        },
+      },
+    },
+    404: {
+      description: "Job not found",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+app.openapi(downloadStatusRoute, async (c) => {
+  const { jobId } = c.req.valid("param");
+  const status = await getJobStatus(jobId);
+
+  if (!status) {
+    return c.json(
+      {
+        error: "Not Found",
+        message: `Job ${jobId} not found or expired`,
+      },
+      404,
+    );
+  }
+
+  return c.json(status, 200);
+});
+
+// SSE streaming endpoint
+const downloadStreamRoute = createRoute({
+  method: "get",
+  path: "/v1/download/stream/:jobId",
+  tags: ["Download"],
+  summary: "Stream job updates (SSE)",
+  description:
+    "Server-Sent Events stream for real-time job updates. Sends progress, completed, and failed events.",
+  request: {
+    params: z.object({
+      jobId: z.string().uuid(),
+    }),
+  },
+  responses: {
+    200: {
+      description: "SSE stream",
+      content: {
+        "text/event-stream": {
+          schema: z.object({}),
+        },
+      },
+    },
+    404: {
+      description: "Job not found",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+app.openapi(downloadStreamRoute, async (c) => {
+  const { jobId } = c.req.valid("param");
+
+  // Check if job exists
+  const initialStatus = await getJobStatus(jobId);
+  if (!initialStatus) {
+    return c.json(
+      {
+        error: "Not Found",
+        message: `Job ${jobId} not found or expired`,
+      },
+      404,
+    );
+  }
+
+  return streamSSE(c, async (stream) => {
+    const channel = `job:${jobId}:updates`;
+    const subscriber = redis.duplicate();
+
+    await subscriber.subscribe(channel);
+
+    // Send initial status
+    await stream.writeSSE({
+      event: "connected",
+      data: JSON.stringify(initialStatus),
+    });
+
+    // Send heartbeat every 30 seconds
+    const heartbeatInterval = setInterval(async () => {
+      await stream.writeSSE({
+        event: "heartbeat",
+        data: JSON.stringify({ timestamp: new Date().toISOString() }),
+      });
+    }, 30000);
+
+    // Listen for updates
+    subscriber.on("message", async (ch, message) => {
+      if (ch === channel) {
+        const update = JSON.parse(message);
+        await stream.writeSSE({
+          event: update.event,
+          data: JSON.stringify(update.data),
+        });
+
+        // Close stream on completion or failure
+        if (update.event === "completed" || update.event === "failed") {
+          clearInterval(heartbeatInterval);
+          await subscriber.quit();
+          await stream.close();
+        }
+      }
+    });
+
+    // Cleanup on client disconnect
+    stream.onAbort(() => {
+      clearInterval(heartbeatInterval);
+      subscriber.quit();
+    });
+  });
+});
+
+// Direct download endpoint (redirects to presigned URL)
+const downloadFileRoute = createRoute({
+  method: "get",
+  path: "/v1/download/:jobId",
+  tags: ["Download"],
+  summary: "Download file",
+  description:
+    "Redirects to the presigned S3 URL for direct download. Only works for completed jobs.",
+  request: {
+    params: z.object({
+      jobId: z.string().uuid(),
+    }),
+  },
+  responses: {
+    302: {
+      description: "Redirect to download URL",
+    },
+    404: {
+      description: "Job not found or not completed",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+app.openapi(downloadFileRoute, async (c) => {
+  const { jobId } = c.req.valid("param");
+  const status = await getJobStatus(jobId);
+
+  if (!status) {
+    return c.json(
+      {
+        error: "Not Found",
+        message: `Job ${jobId} not found or expired`,
+      },
+      404,
+    );
+  }
+
+  if (status.status !== "completed" || !status.downloadUrl) {
+    return c.json(
+      {
+        error: "Not Ready",
+        message: `Job ${jobId} is not completed yet. Current status: ${status.status}`,
+      },
+      404,
+    );
+  }
+
+  return c.redirect(status.downloadUrl, 302);
+});
+
+// Legacy check endpoint (for backward compatibility)
 const downloadCheckRoute = createRoute({
   method: "post",
   path: "/v1/download/check",
@@ -488,24 +591,11 @@ const downloadCheckRoute = createRoute({
   },
 });
 
-app.openapi(downloadInitiateRoute, (c) => {
-  const { file_ids } = c.req.valid("json");
-  const jobId = crypto.randomUUID();
-  return c.json(
-    {
-      jobId,
-      status: "queued" as const,
-      totalFileIds: file_ids.length,
-    },
-    200,
-  );
-});
-
 app.openapi(downloadCheckRoute, async (c) => {
   const { sentry_test } = c.req.valid("query");
   const { file_id } = c.req.valid("json");
 
-  // Intentional error for Sentry testing (hackathon challenge)
+  // Intentional error for Sentry testing
   if (sentry_test === "true") {
     throw new Error(
       `Sentry test error triggered for file_id=${String(file_id)} - This should appear in Sentry!`,
@@ -522,110 +612,14 @@ app.openapi(downloadCheckRoute, async (c) => {
   );
 });
 
-// Download Start Route - simulates long-running download with random delay
-const downloadStartRoute = createRoute({
-  method: "post",
-  path: "/v1/download/start",
-  tags: ["Download"],
-  summary: "Start file download (long-running)",
-  description: `Starts a file download with simulated processing delay.
-    Processing time varies randomly between ${String(env.DOWNLOAD_DELAY_MIN_MS / 1000)}s and ${String(env.DOWNLOAD_DELAY_MAX_MS / 1000)}s.
-    This endpoint demonstrates long-running operations that may timeout behind proxies.`,
-  request: {
-    body: {
-      content: {
-        "application/json": {
-          schema: DownloadStartRequestSchema,
-        },
-      },
-    },
-  },
-  responses: {
-    200: {
-      description: "Download completed successfully",
-      content: {
-        "application/json": {
-          schema: DownloadStartResponseSchema,
-        },
-      },
-    },
-    400: {
-      description: "Invalid request",
-      content: {
-        "application/json": {
-          schema: ErrorResponseSchema,
-        },
-      },
-    },
-    500: {
-      description: "Internal server error",
-      content: {
-        "application/json": {
-          schema: ErrorResponseSchema,
-        },
-      },
-    },
-  },
-});
-
-app.openapi(downloadStartRoute, async (c) => {
-  const { file_id } = c.req.valid("json");
-  const startTime = Date.now();
-
-  // Get random delay and log it
-  const delayMs = getRandomDelay();
-  const delaySec = (delayMs / 1000).toFixed(1);
-  const minDelaySec = (env.DOWNLOAD_DELAY_MIN_MS / 1000).toFixed(0);
-  const maxDelaySec = (env.DOWNLOAD_DELAY_MAX_MS / 1000).toFixed(0);
-  console.log(
-    `[Download] Starting file_id=${String(file_id)} | delay=${delaySec}s (range: ${minDelaySec}s-${maxDelaySec}s) | enabled=${String(env.DOWNLOAD_DELAY_ENABLED)}`,
-  );
-
-  // Simulate long-running download process
-  await sleep(delayMs);
-
-  // Check if file is available in S3
-  const s3Result = await checkS3Availability(file_id);
-  const processingTimeMs = Date.now() - startTime;
-
-  console.log(
-    `[Download] Completed file_id=${String(file_id)}, actual_time=${String(processingTimeMs)}ms, available=${String(s3Result.available)}`,
-  );
-
-  if (s3Result.available) {
-    return c.json(
-      {
-        file_id,
-        status: "completed" as const,
-        downloadUrl: `https://storage.example.com/${s3Result.s3Key ?? ""}?token=${crypto.randomUUID()}`,
-        size: s3Result.size,
-        processingTimeMs,
-        message: `Download ready after ${(processingTimeMs / 1000).toFixed(1)} seconds`,
-      },
-      200,
-    );
-  } else {
-    return c.json(
-      {
-        file_id,
-        status: "failed" as const,
-        downloadUrl: null,
-        size: null,
-        processingTimeMs,
-        message: `File not found after ${(processingTimeMs / 1000).toFixed(1)} seconds of processing`,
-      },
-      200,
-    );
-  }
-});
-
 // OpenAPI spec endpoint
 app.doc("/openapi", {
   openapi: "3.0.0",
   info: {
     title: "Delineate Hackathon Challenge API",
-    version: "1.0.0",
-    description: "API for Delineate Hackathon Challenge",
+    version: "2.0.0",
+    description:
+      "Async download API with job queue, SSE streaming, and polling support",
   },
   servers: [
     { url: "http://localhost:3000", description: "Local server" },
@@ -637,29 +631,24 @@ app.doc("/openapi", {
 app.get("/docs", Scalar({ url: "/openapi" }));
 
 // Graceful shutdown handler
-const gracefulShutdown = (server: ServerType) => (signal: string) => {
+const gracefulShutdown = (server: ServerType) => async (signal: string) => {
   console.log(`\n${signal} received. Starting graceful shutdown...`);
 
-  // Stop accepting new connections
   server.close(() => {
     console.log("HTTP server closed");
-
-    // Shutdown OpenTelemetry to flush traces
-    otelSDK
-      .shutdown()
-      .then(() => {
-        console.log("OpenTelemetry SDK shut down");
-      })
-      .catch((err: unknown) => {
-        console.error("Error shutting down OpenTelemetry:", err);
-      })
-      .finally(() => {
-        // Destroy S3 client
-        s3Client.destroy();
-        console.log("S3 client destroyed");
-        console.log("Graceful shutdown completed");
-      });
   });
+
+  // Shutdown OpenTelemetry
+  await otelSDK.shutdown();
+  console.log("OpenTelemetry SDK shut down");
+
+  // Close connections
+  await closeQueue();
+  await closeRedis();
+  closeS3Client();
+
+  console.log("Graceful shutdown completed");
+  process.exit(0);
 };
 
 // Start server
@@ -669,18 +658,19 @@ const server = serve(
     port: env.PORT,
   },
   (info) => {
-    console.log(`Server is running on http://localhost:${String(info.port)}`);
+    console.log(`🚀 Server is running on http://localhost:${String(info.port)}`);
     console.log(`Environment: ${env.NODE_ENV}`);
     console.log(`API docs: http://localhost:${String(info.port)}/docs`);
     console.log(`OpenAPI spec: http://localhost:${String(info.port)}/openapi`);
+    console.log(`Redis: ${env.REDIS_HOST}:${String(env.REDIS_PORT)}`);
   },
 );
 
 // Register shutdown handlers
 const shutdown = gracefulShutdown(server);
 process.on("SIGTERM", () => {
-  shutdown("SIGTERM");
+  void shutdown("SIGTERM");
 });
 process.on("SIGINT", () => {
-  shutdown("SIGINT");
+  void shutdown("SIGINT");
 });

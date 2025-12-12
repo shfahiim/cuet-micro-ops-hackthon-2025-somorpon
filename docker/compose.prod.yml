@@ -49,6 +49,46 @@ services:
       - delineate-network
 
   # ============================================
+  # Redis - Job Queue and Cache
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: delineate-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - delineate-network
+
+  # ============================================
+  # Redis - Job Queue and Cache
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: delineate-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - delineate-network
+
+  # ============================================
   # Jaeger - Distributed Tracing
   # ============================================
   delineate-jaeger:
@@ -82,18 +122,54 @@ services:
       - S3_SECRET_ACCESS_KEY=minioadmin
       - S3_BUCKET_NAME=downloads
       - S3_FORCE_PATH_STYLE=true
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://delineate-jaeger:4318
     depends_on:
       minio-init:
         condition: service_completed_successfully
+      redis:
+        condition: service_healthy
       delineate-jaeger:
         condition: service_started
     restart: unless-stopped
     networks:
       - delineate-network
 
+  # ============================================
+  # Worker Process - Background Job Processing
+  # ============================================
+  delineate-worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.prod
+    container_name: delineate-worker
+    env_file:
+      - ../.env
+    environment:
+      - NODE_ENV=production
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY_ID=minioadmin
+      - S3_SECRET_ACCESS_KEY=minioadmin
+      - S3_BUCKET_NAME=downloads
+      - S3_FORCE_PATH_STYLE=true
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://delineate-jaeger:4318
+    command: npm run worker
+    depends_on:
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    networks:
+      - delineate-network
+
 volumes:
   minio_data:
+    driver: local
+  redis_data:
     driver: local
 
 networks:
