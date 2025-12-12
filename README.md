@@ -233,7 +233,7 @@ curl -X POST http://localhost:3000/v1/download/check \
 ✅ **SSE Streaming** - Real-time updates  
 ✅ **Polling Endpoint** - Fallback for SSE  
 ✅ **Job Status Tracking** - Redis persistence  
-✅ **Direct Download** - Presigned S3 URLs  
+✅ **Direct Download** - Presigned S3 URLs
 
 **See**: `CHALLENGE-2-COMPLETE.md` and `ASYNC-IMPLEMENTATION.md` for full details.
 
@@ -272,18 +272,21 @@ curl -X POST http://localhost:3000/v1/download/start \
 The async download architecture has been fully implemented with:
 
 **New API Endpoints:**
+
 - `POST /v1/download/initiate` - Start async job (returns jobId immediately)
 - `GET /v1/download/status/:jobId` - Poll job status
 - `GET /v1/download/stream/:jobId` - SSE streaming for real-time updates
 - `GET /v1/download/:jobId` - Direct download redirect
 
 **Infrastructure:**
+
 - Redis for job queue and status tracking
 - BullMQ for reliable job processing
 - Worker process for background processing
 - Presigned S3 URLs for direct downloads
 
 **Testing:**
+
 ```bash
 # Start services
 npm run docker:dev

@@ -9,22 +9,26 @@ Challenge 2 has been successfully implemented! The async download architecture s
 ### 1. Core Components
 
 ✅ **Redis Integration**
+
 - Added Redis 7 to Docker Compose (dev & prod)
 - Job queue and status caching
 - Pub/Sub for SSE updates
 
 ✅ **BullMQ Job Queue**
+
 - Async job processing with retry logic
 - Exponential backoff (1s, 5s, 15s)
 - Automatic job cleanup (TTL: 24 hours)
 
 ✅ **Worker Process**
+
 - Background job processing (`src/worker.ts`)
 - Concurrent processing (5 jobs at a time)
 - Real-time progress updates
 - Presigned S3 URL generation
 
 ✅ **Job Status Tracking**
+
 - Redis-based status persistence
 - Progress tracking (0-100%)
 - Error handling and recovery
@@ -32,22 +36,26 @@ Challenge 2 has been successfully implemented! The async download architecture s
 ### 2. New API Endpoints
 
 ✅ **POST /v1/download/initiate**
+
 - Initiates async download job
 - Returns jobId immediately (< 100ms)
 - No timeout issues
 
 ✅ **GET /v1/download/status/:jobId**
+
 - Polling endpoint for job status
 - Fallback when SSE is not available
 - Returns progress, status, downloadUrl
 
 ✅ **GET /v1/download/stream/:jobId**
+
 - Server-Sent Events (SSE) streaming
 - Real-time progress updates
 - Heartbeat every 30 seconds
 - Auto-closes on completion/failure
 
 ✅ **GET /v1/download/:jobId**
+
 - Direct download redirect
 - Redirects to presigned S3 URL
 - Only works for completed jobs
@@ -55,16 +63,19 @@ Challenge 2 has been successfully implemented! The async download architecture s
 ### 3. Infrastructure
 
 ✅ **Docker Compose Updates**
+
 - Added Redis service
 - Added worker service
 - Proper health checks and dependencies
 
 ✅ **Environment Configuration**
+
 - Redis connection settings
 - Job TTL configuration
 - Presigned URL expiry
 
 ✅ **Graceful Shutdown**
+
 - Proper cleanup of Redis connections
 - Queue closure
 - S3 client destruction
@@ -137,11 +148,13 @@ npm run test:async
 ### 1. No Timeout Issues ✅
 
 **Before (Synchronous):**
+
 - Request takes 10-120 seconds
 - Proxy timeout at 60-100 seconds
 - User sees 504 Gateway Timeout
 
 **After (Asynchronous):**
+
 - Request returns in < 100ms with jobId
 - No proxy timeout issues
 - User can poll or stream for updates
@@ -149,6 +162,7 @@ npm run test:async
 ### 2. Real-Time Progress ✅
 
 **SSE Streaming:**
+
 ```
 event: connected
 data: {"jobId":"...","status":"queued",...}
@@ -161,6 +175,7 @@ data: {"downloadUrl": "https://...", "size": 1048576}
 ```
 
 **Polling Fallback:**
+
 ```json
 {
   "status": "processing",
@@ -207,14 +222,14 @@ data: {"downloadUrl": "https://...", "size": 1048576}
 
 ## Performance Comparison
 
-| Metric | Synchronous | Asynchronous |
-|--------|-------------|--------------|
-| **API Response Time** | 10-120 seconds | < 100ms |
-| **Proxy Timeout** | ❌ Fails | ✅ No issues |
-| **User Feedback** | ❌ None | ✅ Real-time |
-| **Scalability** | ❌ Limited | ✅ Unlimited |
-| **Resilience** | ❌ Lost on disconnect | ✅ Persisted |
-| **Resource Usage** | ❌ High | ✅ Low |
+| Metric                | Synchronous           | Asynchronous |
+| --------------------- | --------------------- | ------------ |
+| **API Response Time** | 10-120 seconds        | < 100ms      |
+| **Proxy Timeout**     | ❌ Fails              | ✅ No issues |
+| **User Feedback**     | ❌ None               | ✅ Real-time |
+| **Scalability**       | ❌ Limited            | ✅ Unlimited |
+| **Resilience**        | ❌ Lost on disconnect | ✅ Persisted |
+| **Resource Usage**    | ❌ High               | ✅ Low       |
 
 ## Monitoring
 
@@ -252,6 +267,7 @@ docker logs delineate-redis -f
 ### Frontend Integration
 
 Create a React app with:
+
 - `useDownload` hook for job management
 - SSE streaming with polling fallback
 - Progress indicators
@@ -274,7 +290,7 @@ The async download architecture successfully solves the long-running download pr
 ✅ Providing real-time feedback via SSE with polling fallback  
 ✅ Being proxy-friendly with short-lived HTTP requests  
 ✅ Enabling horizontal scaling with stateless components  
-✅ Ensuring resilience with job persistence and retries  
+✅ Ensuring resilience with job persistence and retries
 
 All requirements from `ARCHITECTURE.md` have been implemented and tested.
 
@@ -294,6 +310,6 @@ All requirements from `ARCHITECTURE.md` have been implemented and tested.
 ✅ Progress updates tracked in Redis  
 ✅ Presigned URLs generated on completion  
 ✅ Direct download redirect works  
-✅ SSE streaming endpoint available  
+✅ SSE streaming endpoint available
 
 **All tests passing!** 🎉

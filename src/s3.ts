@@ -1,4 +1,8 @@
-import { GetObjectCommand, HeadObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  GetObjectCommand,
+  HeadObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { env } from "./config.ts";
 
@@ -78,9 +82,7 @@ export const checkS3Availability = async (
 };
 
 // Generate presigned URL for download
-export const generatePresignedUrl = async (
-  s3Key: string,
-): Promise<string> => {
+export const generatePresignedUrl = async (s3Key: string): Promise<string> => {
   const command = new GetObjectCommand({
     Bucket: env.S3_BUCKET_NAME,
     Key: s3Key,

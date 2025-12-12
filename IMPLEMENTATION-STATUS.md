@@ -117,7 +117,7 @@ curl -X POST http://localhost:3000/v1/download/initiate \
 ✅ Worker processing: Background processing successful  
 ✅ Presigned URLs: Generated correctly  
 ✅ SSE streaming: Endpoint available  
-✅ Direct download: Redirect working  
+✅ Direct download: Redirect working
 
 **Points**: 15/15 ✅
 
@@ -194,13 +194,13 @@ npm run test:e2e
 
 ## Total Score
 
-| Challenge | Points | Status |
-|-----------|--------|--------|
-| Challenge 1: S3 Storage | 15/15 | ✅ Complete |
-| Challenge 2: Architecture | 15/15 | ✅ Complete |
-| Challenge 3: CI/CD | 10/10 | ✅ Complete |
-| Challenge 4: Observability | 0/10 | ⏭️ Optional |
-| **Total** | **40/50** | **80%** |
+| Challenge                  | Points    | Status      |
+| -------------------------- | --------- | ----------- |
+| Challenge 1: S3 Storage    | 15/15     | ✅ Complete |
+| Challenge 2: Architecture  | 15/15     | ✅ Complete |
+| Challenge 3: CI/CD         | 10/10     | ✅ Complete |
+| Challenge 4: Observability | 0/10      | ⏭️ Optional |
+| **Total**                  | **40/50** | **80%**     |
 
 ---
 
@@ -309,14 +309,14 @@ open http://localhost:3000/v1/download/stream/<jobId>
 
 ## Performance Metrics
 
-| Metric | Value |
-|--------|-------|
-| **API Response Time** | < 100ms |
-| **Job Processing Time** | 10-120 seconds (simulated) |
-| **Worker Concurrency** | 5 jobs |
-| **Job TTL** | 24 hours |
-| **Presigned URL Expiry** | 15 minutes |
-| **Redis Connection Pool** | 10 connections |
+| Metric                    | Value                      |
+| ------------------------- | -------------------------- |
+| **API Response Time**     | < 100ms                    |
+| **Job Processing Time**   | 10-120 seconds (simulated) |
+| **Worker Concurrency**    | 5 jobs                     |
+| **Job TTL**               | 24 hours                   |
+| **Presigned URL Expiry**  | 15 minutes                 |
+| **Redis Connection Pool** | 10 connections             |
 
 ---
 
@@ -337,6 +337,7 @@ npm run docker:prod
 ### CI/CD
 
 Push to `main` branch triggers:
+
 1. Linting and formatting checks
 2. E2E tests with MinIO
 3. Docker image build
@@ -408,7 +409,7 @@ All required challenges (1-3) have been successfully implemented and tested. The
 ✅ **Scalable** - Horizontal scaling ready  
 ✅ **Resilient** - Error handling and retries  
 ✅ **Observable** - Tracing and monitoring  
-✅ **Automated** - CI/CD pipeline  
+✅ **Automated** - CI/CD pipeline
 
 **Total Score: 40/50 (80%)** 🎉
 
@@ -417,6 +418,7 @@ All required challenges (1-3) have been successfully implemented and tested. The
 ## Contact & Support
 
 For questions or issues:
+
 - Check documentation in `docs/` folder
 - Review API docs at http://localhost:3000/docs
 - Check logs with `docker logs <container-name>`

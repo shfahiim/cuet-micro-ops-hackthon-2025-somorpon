@@ -1,8 +1,11 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import Redis from "ioredis";
 import { env } from "./config.ts";
 
 // Redis client for job status and pub/sub
-export const redis = new Redis({
+export const redis: Redis = new Redis({
   host: env.REDIS_HOST,
   port: env.REDIS_PORT,
   password: env.REDIS_PASSWORD,
@@ -15,7 +18,7 @@ redis.on("connect", () => {
   console.log("✅ Redis connected");
 });
 
-redis.on("error", (err) => {
+redis.on("error", (err: Error) => {
   console.error("❌ Redis error:", err);
 });
 

@@ -12,6 +12,7 @@ curl http://localhost:3000/health
 ```
 
 **Result:**
+
 ```json
 {
   "status": "healthy",
@@ -35,6 +36,7 @@ curl -X POST http://localhost:3000/v1/download/initiate \
 ```
 
 **Result:**
+
 ```json
 {
   "jobId": "655f8f39-ce4e-44e8-9c72-d0a5e1414f3f",
@@ -56,6 +58,7 @@ curl http://localhost:3000/v1/download/status/655f8f39-ce4e-44e8-9c72-d0a5e1414f
 ```
 
 **Result (Initial):**
+
 ```json
 {
   "jobId": "655f8f39-ce4e-44e8-9c72-d0a5e1414f3f",
@@ -73,6 +76,7 @@ curl http://localhost:3000/v1/download/status/655f8f39-ce4e-44e8-9c72-d0a5e1414f
 ```
 
 **Result (After 102 seconds):**
+
 ```json
 {
   "jobId": "655f8f39-ce4e-44e8-9c72-d0a5e1414f3f",
@@ -96,6 +100,7 @@ curl http://localhost:3000/v1/download/status/655f8f39-ce4e-44e8-9c72-d0a5e1414f
 ## Test 4: Worker Processing
 
 **Worker Logs:**
+
 ```
 [Worker] Starting job 655f8f39-ce4e-44e8-9c72-d0a5e1414f3f
 [Worker] Processing job 655f8f39-ce4e-44e8-9c72-d0a5e1414f3f with 3 files
@@ -114,6 +119,7 @@ curl http://localhost:3000/v1/download/status/655f8f39-ce4e-44e8-9c72-d0a5e1414f
 ## Test 5: Presigned URL Generation
 
 **Download URL Generated:**
+
 ```
 http://minio:9000/downloads/downloads/70000.zip?
   X-Amz-Algorithm=AWS4-HMAC-SHA256&
@@ -134,6 +140,7 @@ http://minio:9000/downloads/downloads/70000.zip?
 **Endpoint**: `GET /v1/download/stream/:jobId`
 
 **Expected Events:**
+
 ```
 event: connected
 data: {"jobId":"...","status":"queued",...}
@@ -165,40 +172,45 @@ curl -L http://localhost:3000/v1/download/655f8f39-ce4e-44e8-9c72-d0a5e1414f3f
 
 ## Performance Metrics
 
-| Metric | Value |
-|--------|-------|
-| **Job Initiation Time** | < 100ms |
-| **Job Processing Time** | 102.2 seconds |
-| **API Response Time** | < 50ms |
-| **Worker Concurrency** | 5 jobs |
-| **Job TTL** | 24 hours |
-| **Presigned URL Expiry** | 15 minutes |
+| Metric                   | Value         |
+| ------------------------ | ------------- |
+| **Job Initiation Time**  | < 100ms       |
+| **Job Processing Time**  | 102.2 seconds |
+| **API Response Time**    | < 50ms        |
+| **Worker Concurrency**   | 5 jobs        |
+| **Job TTL**              | 24 hours      |
+| **Presigned URL Expiry** | 15 minutes    |
 
 ---
 
 ## Architecture Validation
 
 ### ✅ Decoupling
+
 - API returns immediately with jobId
 - Worker processes in background
 - No blocking operations
 
 ### ✅ Real-Time Feedback
+
 - SSE streaming available
 - Polling endpoint as fallback
 - Progress tracking (0-100%)
 
 ### ✅ Proxy-Friendly
+
 - All API requests < 100ms
 - No long-running HTTP connections
 - SSE with proper keep-alive
 
 ### ✅ Scalability
+
 - Stateless API servers
 - Worker processes can scale horizontally
 - Redis for distributed state
 
 ### ✅ Resilience
+
 - Job persistence in Redis
 - Automatic retries (3 attempts)
 - Graceful error handling
@@ -245,13 +257,13 @@ curl -L http://localhost:3000/v1/download/<jobId>
 
 ## Services Status
 
-| Service | Status | Port | Health |
-|---------|--------|------|--------|
-| **API Server** | ✅ Running | 3000 | Healthy |
-| **Worker** | ✅ Running | - | Processing |
-| **Redis** | ✅ Running | 6379 | Connected |
-| **MinIO** | ✅ Running | 9000 | Healthy |
-| **Jaeger** | ✅ Running | 16686 | Running |
+| Service        | Status     | Port  | Health     |
+| -------------- | ---------- | ----- | ---------- |
+| **API Server** | ✅ Running | 3000  | Healthy    |
+| **Worker**     | ✅ Running | -     | Processing |
+| **Redis**      | ✅ Running | 6379  | Connected  |
+| **MinIO**      | ✅ Running | 9000  | Healthy    |
+| **Jaeger**     | ✅ Running | 16686 | Running    |
 
 ---
 
@@ -263,7 +275,7 @@ All tests passed successfully! The async download architecture is:
 ✅ **Performant** - API responses < 100ms  
 ✅ **Scalable** - Horizontal scaling ready  
 ✅ **Resilient** - Job persistence and retries  
-✅ **User-Friendly** - Real-time progress updates  
+✅ **User-Friendly** - Real-time progress updates
 
 **Challenge 2: COMPLETE** 🎉
 

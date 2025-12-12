@@ -1,6 +1,5 @@
 import { Worker } from "bullmq";
 import { env } from "./config.ts";
-import type { DownloadJobData, DownloadJobResult } from "./queue.ts";
 import {
   markJobCompleted,
   markJobFailed,
@@ -8,9 +7,13 @@ import {
   publishJobUpdate,
   updateJobProgress,
 } from "./job-status.ts";
-import { checkS3Availability, generatePresignedUrl } from "./s3.ts";
+import type { DownloadJobData, DownloadJobResult } from "./queue.ts";
 import { closeRedis } from "./redis.ts";
-import { closeS3Client } from "./s3.ts";
+import {
+  checkS3Availability,
+  generatePresignedUrl,
+  closeS3Client,
+} from "./s3.ts";
 
 // Random delay helper for simulating long-running downloads
 const getRandomDelay = (): number => {
@@ -51,8 +54,7 @@ const processDownloadJob = async (
   // Process each file
   let completedFiles = 0;
   let totalSize = 0;
-  const availableFiles: Array<{ fileId: number; s3Key: string; size: number }> =
-    [];
+  const availableFiles: { fileId: number; s3Key: string; size: number }[] = [];
 
   for (const fileId of fileIds) {
     const result = await checkS3Availability(fileId);
@@ -138,7 +140,8 @@ const processDownloadJob = async (
 const worker = new Worker<DownloadJobData, DownloadJobResult>(
   "downloads",
   async (job) => {
-    console.log(`[Worker] Starting job ${job.id}`);
+    const jobIdStr: string = job.id?.toString() ?? "unknown";
+    console.log(`[Worker] Starting job ${jobIdStr}`);
     return await processDownloadJob(job.data);
   },
   {
@@ -154,11 +157,13 @@ const worker = new Worker<DownloadJobData, DownloadJobResult>(
 
 // Worker event handlers
 worker.on("completed", (job) => {
-  console.log(`[Worker] ✅ Job ${job.id} completed`);
+  const jobIdStr: string = job.id?.toString() ?? "unknown";
+  console.log(`[Worker] ✅ Job ${jobIdStr} completed`);
 });
 
 worker.on("failed", (job, err) => {
-  console.error(`[Worker] ❌ Job ${job?.id ?? "unknown"} failed:`, err);
+  const jobIdStr = job?.id?.toString() ?? "unknown";
+  console.error(`[Worker] ❌ Job ${jobIdStr} failed:`, err);
 });
 
 worker.on("error", (err) => {
@@ -171,7 +176,7 @@ console.log(`Redis: ${env.REDIS_HOST}:${String(env.REDIS_PORT)}`);
 console.log(`Concurrency: 5 jobs`);
 
 // Graceful shutdown
-const gracefulShutdown = async (signal: string): Promise<void> => {
+const gracefulShutdown = async (signal: string): Promise<never> => {
   console.log(`\n${signal} received. Shutting down worker...`);
 
   await worker.close();
@@ -181,6 +186,7 @@ const gracefulShutdown = async (signal: string): Promise<void> => {
   closeS3Client();
 
   console.log("Graceful shutdown completed");
+  // eslint-disable-next-line n/no-process-exit
   process.exit(0);
 };
 

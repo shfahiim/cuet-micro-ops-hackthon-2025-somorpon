@@ -57,7 +57,9 @@ export const addDownloadJob = async (
       jobId, // Use our jobId as the BullMQ job ID
     },
   );
-  console.log(`[Queue] Added job ${jobId} with ${String(fileIds.length)} files`);
+  console.log(
+    `[Queue] Added job ${jobId} with ${String(fileIds.length)} files`,
+  );
 };
 
 // Close queue connection

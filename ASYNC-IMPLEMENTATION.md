@@ -71,6 +71,7 @@ The async download architecture solves the long-running download problem by:
 Initiates an asynchronous download job.
 
 **Request:**
+
 ```json
 {
   "file_ids": [70000, 70001, 70002]
@@ -78,6 +79,7 @@ Initiates an asynchronous download job.
 ```
 
 **Response (200 OK):**
+
 ```json
 {
   "jobId": "550e8400-e29b-41d4-a716-446655440000",
@@ -92,6 +94,7 @@ Initiates an asynchronous download job.
 Polls job status (fallback for SSE).
 
 **Response (200 OK):**
+
 ```json
 {
   "jobId": "550e8400-e29b-41d4-a716-446655440000",
@@ -109,6 +112,7 @@ Polls job status (fallback for SSE).
 ```
 
 **Status Values:**
+
 - `queued` - Job accepted, waiting for worker
 - `processing` - Worker is processing files
 - `completed` - All files processed, downloadUrl available
@@ -119,6 +123,7 @@ Polls job status (fallback for SSE).
 Server-Sent Events stream for real-time updates.
 
 **Response (text/event-stream):**
+
 ```
 event: connected
 data: {"jobId":"...","status":"queued",...}
@@ -134,6 +139,7 @@ data: {"downloadUrl": "https://storage.example.com/...", "size": 1048576}
 ```
 
 **Event Types:**
+
 - `connected` - Initial connection with current status
 - `progress` - Job progress update
 - `completed` - Job finished successfully
@@ -145,6 +151,7 @@ data: {"downloadUrl": "https://storage.example.com/...", "size": 1048576}
 Direct download endpoint (redirects to presigned S3 URL).
 
 **Response (302 Found):**
+
 ```
 Location: https://minio:9000/downloads/550e8400...?X-Amz-Signature=...
 ```
@@ -162,6 +169,7 @@ npm run docker:prod
 ```
 
 This starts:
+
 - API server on port 3000
 - Worker process (background)
 - Redis on port 6379
@@ -249,7 +257,7 @@ const worker = new Worker<DownloadJobData, DownloadJobResult>(
   async (job) => {
     // 1. Mark as processing
     await markJobProcessing(job.data.jobId);
-    
+
     // 2. Process files with simulated delay
     for (const fileId of job.data.fileIds) {
       const result = await checkS3Availability(fileId);
@@ -257,10 +265,10 @@ const worker = new Worker<DownloadJobData, DownloadJobResult>(
       await updateJobProgress(job.data.jobId, completedFiles);
       await publishJobUpdate(job.data.jobId, "progress", {...});
     }
-    
+
     // 3. Generate presigned URL
     const downloadUrl = await generatePresignedUrl(s3Key);
-    
+
     // 4. Mark as completed
     await markJobCompleted(job.data.jobId, downloadUrl, totalSize);
     await publishJobUpdate(job.data.jobId, "completed", {...});
@@ -275,18 +283,18 @@ const worker = new Worker<DownloadJobData, DownloadJobResult>(
 // src/index.ts
 app.openapi(downloadStreamRoute, async (c) => {
   const { jobId } = c.req.valid("param");
-  
+
   return streamSSE(c, async (stream) => {
     const channel = `job:${jobId}:updates`;
     const subscriber = redis.duplicate();
     await subscriber.subscribe(channel);
-    
+
     // Send initial status
     await stream.writeSSE({
       event: "connected",
       data: JSON.stringify(initialStatus),
     });
-    
+
     // Listen for updates from worker
     subscriber.on("message", async (ch, message) => {
       const update = JSON.parse(message);
@@ -329,14 +337,14 @@ services:
     ports: ["6379:6379"]
     volumes: [redis_data:/data]
     command: redis-server --appendonly yes
-    
+
   delineate-app:
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
     depends_on:
       - redis
-      
+
   delineate-worker:
     command: npm run worker
     environment:
@@ -377,11 +385,13 @@ services:
 ### Scalability
 
 **Horizontal Scaling:**
+
 - API servers: Stateless, scale to N instances
 - Workers: Scale based on queue depth
 - Redis: Single instance or cluster for HA
 
 **Capacity Planning:**
+
 ```
 Assumptions:
 - Average download time: 30 seconds
@@ -465,13 +475,13 @@ docker logs delineate-redis -f
 
 ## Comparison: Sync vs Async
 
-| Aspect | Synchronous (Old) | Asynchronous (New) |
-|--------|------------------|-------------------|
-| **Response Time** | 10-120 seconds | < 100ms |
-| **Proxy Timeout** | ❌ Fails at 60-100s | ✅ No timeout issues |
-| **User Feedback** | ❌ No progress | ✅ Real-time updates |
-| **Scalability** | ❌ Limited by connections | ✅ Unlimited jobs |
-| **Resilience** | ❌ Lost on disconnect | ✅ Persisted in Redis |
+| Aspect             | Synchronous (Old)          | Asynchronous (New)     |
+| ------------------ | -------------------------- | ---------------------- |
+| **Response Time**  | 10-120 seconds             | < 100ms                |
+| **Proxy Timeout**  | ❌ Fails at 60-100s        | ✅ No timeout issues   |
+| **User Feedback**  | ❌ No progress             | ✅ Real-time updates   |
+| **Scalability**    | ❌ Limited by connections  | ✅ Unlimited jobs      |
+| **Resilience**     | ❌ Lost on disconnect      | ✅ Persisted in Redis  |
 | **Resource Usage** | ❌ High (open connections) | ✅ Low (async workers) |
 
 ## Next Steps
@@ -499,10 +509,10 @@ export function useDownload(fileIds: number[]) {
       body: JSON.stringify({ file_ids: fileIds }),
     });
     const { jobId } = await response.json();
-    
+
     // 2. Try SSE first
     connectSSE(jobId);
-    
+
     // 3. Fallback to polling after 5 seconds
     setTimeout(() => {
       if (eventSourceRef.current?.readyState !== EventSource.OPEN) {
@@ -518,6 +528,7 @@ export function useDownload(fileIds: number[]) {
 ### Production Deployment
 
 1. **Nginx Configuration** for SSE:
+
 ```nginx
 location /v1/download/stream {
     proxy_pass http://api:3000;
@@ -540,6 +551,6 @@ The async download architecture successfully solves the long-running download pr
 ✅ Providing real-time feedback via SSE with polling fallback  
 ✅ Being proxy-friendly with short-lived HTTP requests  
 ✅ Enabling horizontal scaling with stateless components  
-✅ Ensuring resilience with job persistence and retries  
+✅ Ensuring resilience with job persistence and retries
 
 **Challenge 2: COMPLETE** ✅

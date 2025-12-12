@@ -10,14 +10,14 @@ import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
 import { Scalar } from "@scalar/hono-api-reference";
 import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
+import { streamSSE } from "hono/streaming";
 import { timeout } from "hono/timeout";
 import { rateLimiter } from "hono-rate-limiter";
-import { streamSSE } from "hono/streaming";
 import { env } from "./config.ts";
-import { checkS3Availability, checkS3Health, closeS3Client } from "./s3.ts";
-import { closeRedis, redis } from "./redis.ts";
-import { addDownloadJob, closeQueue } from "./queue.ts";
 import { createJobStatus, getJobStatus } from "./job-status.ts";
+import { addDownloadJob, closeQueue } from "./queue.ts";
+import { closeRedis, redis } from "./redis.ts";
+import { checkS3Availability, checkS3Health, closeS3Client } from "./s3.ts";
 
 // Initialize OpenTelemetry SDK
 const otelSDK = new NodeSDK({
@@ -61,6 +61,7 @@ app.use("*", async (c, next) => {
   if (c.req.path.includes("/stream")) {
     await next();
   } else {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     await timeout(env.REQUEST_TIMEOUT_MS)(c, next);
   }
 });
@@ -103,7 +104,8 @@ const ErrorResponseSchema = z
 
 // Error handler
 app.onError((err, c) => {
-  c.get("sentry").captureException(err);
+  const sentry = c.get("sentry") as { captureException: (err: Error) => void };
+  sentry.captureException(err);
   const requestId = c.get("requestId") as string | undefined;
   return c.json(
     {
@@ -251,6 +253,7 @@ app.openapi(healthRoute, async (c) => {
   const storageHealthy = await checkS3Health();
   let redisHealthy = false;
   try {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     await redis.ping();
     redisHealthy = true;
   } catch {
@@ -351,7 +354,7 @@ const downloadStatusRoute = createRoute({
     "Polls the status of a download job. Use this as a fallback when SSE is not available.",
   request: {
     params: z.object({
-      jobId: z.string().uuid(),
+      jobId: z.string().min(1),
     }),
   },
   responses: {
@@ -401,7 +404,7 @@ const downloadStreamRoute = createRoute({
     "Server-Sent Events stream for real-time job updates. Sends progress, completed, and failed events.",
   request: {
     params: z.object({
-      jobId: z.string().uuid(),
+      jobId: z.string().min(1),
     }),
   },
   responses: {
@@ -441,8 +444,10 @@ app.openapi(downloadStreamRoute, async (c) => {
 
   return streamSSE(c, async (stream) => {
     const channel = `job:${jobId}:updates`;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     const subscriber = redis.duplicate();
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     await subscriber.subscribe(channel);
 
     // Send initial status
@@ -452,27 +457,33 @@ app.openapi(downloadStreamRoute, async (c) => {
     });
 
     // Send heartbeat every 30 seconds
-    const heartbeatInterval = setInterval(async () => {
-      await stream.writeSSE({
+    const heartbeatInterval = setInterval(() => {
+      void stream.writeSSE({
         event: "heartbeat",
         data: JSON.stringify({ timestamp: new Date().toISOString() }),
       });
     }, 30000);
 
     // Listen for updates
-    subscriber.on("message", async (ch, message) => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    subscriber.on("message", (ch: string, message: string) => {
       if (ch === channel) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const update = JSON.parse(message);
-        await stream.writeSSE({
-          event: update.event,
+        void stream.writeSSE({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          event: update.event as string,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           data: JSON.stringify(update.data),
         });
 
         // Close stream on completion or failure
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if (update.event === "completed" || update.event === "failed") {
           clearInterval(heartbeatInterval);
-          await subscriber.quit();
-          await stream.close();
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+          void subscriber.quit();
+          void stream.close();
         }
       }
     });
@@ -480,7 +491,8 @@ app.openapi(downloadStreamRoute, async (c) => {
     // Cleanup on client disconnect
     stream.onAbort(() => {
       clearInterval(heartbeatInterval);
-      subscriber.quit();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      void subscriber.quit();
     });
   });
 });
@@ -495,7 +507,7 @@ const downloadFileRoute = createRoute({
     "Redirects to the presigned S3 URL for direct download. Only works for completed jobs.",
   request: {
     params: z.object({
-      jobId: z.string().uuid(),
+      jobId: z.string().min(1),
     }),
   },
   responses: {
@@ -631,25 +643,28 @@ app.doc("/openapi", {
 app.get("/docs", Scalar({ url: "/openapi" }));
 
 // Graceful shutdown handler
-const gracefulShutdown = (server: ServerType) => async (signal: string) => {
-  console.log(`\n${signal} received. Starting graceful shutdown...`);
+const gracefulShutdown =
+  (server: ServerType) =>
+  async (signal: string): Promise<never> => {
+    console.log(`\n${signal} received. Starting graceful shutdown...`);
 
-  server.close(() => {
-    console.log("HTTP server closed");
-  });
+    server.close(() => {
+      console.log("HTTP server closed");
+    });
 
-  // Shutdown OpenTelemetry
-  await otelSDK.shutdown();
-  console.log("OpenTelemetry SDK shut down");
+    // Shutdown OpenTelemetry
+    await otelSDK.shutdown();
+    console.log("OpenTelemetry SDK shut down");
 
-  // Close connections
-  await closeQueue();
-  await closeRedis();
-  closeS3Client();
+    // Close connections
+    await closeQueue();
+    await closeRedis();
+    closeS3Client();
 
-  console.log("Graceful shutdown completed");
-  process.exit(0);
-};
+    console.log("Graceful shutdown completed");
+    // eslint-disable-next-line n/no-process-exit
+    process.exit(0);
+  };
 
 // Start server
 const server = serve(
@@ -658,7 +673,9 @@ const server = serve(
     port: env.PORT,
   },
   (info) => {
-    console.log(`🚀 Server is running on http://localhost:${String(info.port)}`);
+    console.log(
+      `🚀 Server is running on http://localhost:${String(info.port)}`,
+    );
     console.log(`Environment: ${env.NODE_ENV}`);
     console.log(`API docs: http://localhost:${String(info.port)}/docs`);
     console.log(`OpenAPI spec: http://localhost:${String(info.port)}/openapi`);

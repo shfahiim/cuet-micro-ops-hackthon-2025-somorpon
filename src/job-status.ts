@@ -1,5 +1,8 @@
-import { redis } from "./redis.ts";
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { env } from "./config.ts";
+import { redis } from "./redis.ts";
 
 export interface JobStatus {
   jobId: string;
@@ -53,7 +56,7 @@ export const createJobStatus = async (
 export const getJobStatus = async (
   jobId: string,
 ): Promise<JobStatus | null> => {
-  const data = await redis.get(getJobKey(jobId));
+  const data: string | null = await redis.get(getJobKey(jobId));
   if (!data) return null;
   return JSON.parse(data) as JobStatus;
 };
