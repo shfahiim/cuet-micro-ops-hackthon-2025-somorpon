@@ -1,13 +1,13 @@
-#!/usr/bin/env node
 /**
  * E2E Test Runner
  * Starts the server, runs tests, and cleans up
  */
 
-import { spawn, type ChildProcess } from "node:child_process";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import type { ChildProcess } from "node:child_process";
+import { spawn } from "node:child_process";
 import { access } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -75,12 +75,12 @@ async function startServer(): Promise<ChildProcess> {
     },
   );
 
-  server.stdout?.on("data", (data: Buffer) => {
+  server.stdout.on("data", (data: Buffer) => {
     const output = data.toString().trim();
     if (output) console.log(`[server] ${output}`);
   });
 
-  server.stderr?.on("data", (data: Buffer) => {
+  server.stderr.on("data", (data: Buffer) => {
     const output = data.toString().trim();
     // Filter out experimental warning
     if (output && !output.includes("ExperimentalWarning")) {
@@ -103,24 +103,27 @@ async function runTests(): Promise<number> {
         stdio: "inherit",
         env: {
           ...process.env,
-          API_BASE: process.env.API_BASE || "http://localhost:3000",
+          API_BASE: process.env.API_BASE ?? "http://localhost:3000",
         },
       },
     );
 
     tests.on("close", (code) => {
+      // Exit code 0 = success, non-zero = failure
       resolve(code ?? 1);
+    });
+
+    tests.on("error", (err) => {
+      console.error(`Failed to start test process: ${err.message}`);
+      resolve(1);
     });
   });
 }
 
 async function main(): Promise<void> {
-  let server: ChildProcess | null = null;
+  const server: ChildProcess = await startServer();
 
   try {
-    // Start server
-    server = await startServer();
-
     // Wait for server to be ready
     await waitForServer("http://localhost:3000/health");
 
@@ -128,29 +131,23 @@ async function main(): Promise<void> {
     const exitCode = await runTests();
 
     // Cleanup
-    if (server) {
-      console.log(`${colors.yellow}Stopping server...${colors.reset}`);
-      server.kill();
-    }
+    console.log(`${colors.yellow}Stopping server...${colors.reset}`);
+    server.kill();
 
     if (exitCode === 0) {
       console.log(`${colors.green}✅ All tests passed!${colors.reset}`);
-      process.exit(0);
     } else {
       console.error(`${colors.red}❌ Tests failed!${colors.reset}`);
-      process.exit(1);
+      throw new Error("Tests failed");
     }
   } catch (error) {
     console.error(
       `${colors.red}❌ Error: ${error instanceof Error ? error.message : String(error)}${colors.reset}`,
     );
 
-    if (server) {
-      server.kill();
-    }
-
-    process.exit(1);
+    server.kill();
+    throw error;
   }
 }
 
-main();
+void main();

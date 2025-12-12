@@ -1,5 +1,75 @@
 # Delineate Hackathon Challenge - CUET Fest 2025
 
+## 🚀 Quick Start Guide
+
+### Test Production Deployment
+
+```bash
+# Run comprehensive E2E tests against production server
+node --experimental-transform-types scripts/e2e-test.ts http://36.255.70.250:3000
+
+# Or test individual endpoints
+curl http://36.255.70.250:3000/health
+curl -X POST http://36.255.70.250:3000/v1/download/check \
+  -H "Content-Type: application/json" \
+  -d '{"file_id": 70000}'
+```
+
+### Access Production Services
+
+| Service           | URL                                  | Credentials              |
+| ----------------- | ------------------------------------ | ------------------------ |
+| 🌐 API Server     | http://36.255.70.250:3000            | -                        |
+| 📚 API Docs       | http://36.255.70.250:3000/docs       | -                        |
+| 🔍 Jaeger UI      | http://36.255.70.250:16686           | -                        |
+| 📦 MinIO Console  | http://36.255.70.250:9001            | minioadmin / minioadmin  |
+| 📊 MinIO API      | http://36.255.70.250:9000            | minioadmin / minioadmin  |
+## 🔄 CI/CD
+
+
+### Run Locally with Docker
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/shfahiim/cuet-micro-ops-hackthon-2025-somorpon.git
+cd cuet-micro-ops-hackthon-2025-somorpon
+
+# 2. Start all services (API, Worker, Redis, MinIO, Jaeger)
+npm run docker:dev
+
+# 3. Verify services are running
+curl http://localhost:3000/health
+
+# 4. Access the API documentation
+open http://localhost:3000/docs  # or visit in browser
+
+# 5. Stop all services
+docker compose -f docker/compose.dev.yml down
+```
+
+### Run Locally without Docker
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Create environment file
+cp .env.example .env
+
+# 3. Start Redis (required)
+redis-server
+
+# 4. Start MinIO or configure S3
+# See Challenge 1 for setup instructions
+
+# 5. Start the development server
+npm run dev
+
+# 6. In another terminal, start the worker
+npm run worker:dev
+```
+
+# Run comprehensive E2E tests against production serve
 ## 🔄 CI/CD
 
 [![CI/CD Pipeline](https://github.com/shfahiim/cuet-micro-ops-hackthon-2025-somorpon/actions/workflows/ci.yml/badge.svg)](https://github.com/shfahiim/cuet-micro-ops-hackthon-2025-somorpon/actions/workflows/ci.yml)
@@ -641,13 +711,153 @@ DOWNLOAD_DELAY_MAX_MS=200000
 
 ## API Endpoints
 
-| Method | Endpoint                | Description                         |
-| ------ | ----------------------- | ----------------------------------- |
-| GET    | `/`                     | Welcome message                     |
-| GET    | `/health`               | Health check with storage status    |
-| POST   | `/v1/download/initiate` | Initiate bulk download job          |
-| POST   | `/v1/download/check`    | Check single file availability      |
-| POST   | `/v1/download/start`    | Start download with simulated delay |
+### Base URLs
+
+- **Local Development**: `http://localhost:3000`
+- **Production**: `http://36.255.70.250:3000`
+
+### Endpoints Overview
+
+| Method | Endpoint                       | Description                         |
+| ------ | ------------------------------ | ----------------------------------- |
+| GET    | `/`                            | Welcome message                     |
+| GET    | `/health`                      | Health check with storage status    |
+| GET    | `/docs`                        | Interactive API documentation       |
+| GET    | `/openapi`                     | OpenAPI specification (JSON)        |
+| POST   | `/v1/download/initiate`        | Initiate async bulk download job    |
+| GET    | `/v1/download/status/:jobId`   | Check job status (polling)          |
+| GET    | `/v1/download/stream/:jobId`   | SSE stream for real-time updates    |
+| GET    | `/v1/download/:jobId`          | Download completed files            |
+| POST   | `/v1/download/check`           | Check single file availability      |
+| POST   | `/v1/download/start`           | Start download with simulated delay |
+
+### API Usage Examples
+
+#### 1. Check API Health
+
+```bash
+# Local
+curl http://localhost:3000/health
+
+# Production
+curl http://36.255.70.250:3000/health
+
+# Expected Response:
+# {"status":"healthy","checks":{"storage":"ok","redis":"ok"}}
+```
+
+#### 2. Initiate Async Download (Recommended)
+
+```bash
+# Local
+curl -X POST http://localhost:3000/v1/download/initiate \
+  -H "Content-Type: application/json" \
+  -d '{"file_ids": [70000, 70007, 70014]}'
+
+# Production
+curl -X POST http://36.255.70.250:3000/v1/download/initiate \
+  -H "Content-Type: application/json" \
+  -H "X-Request-ID: my-custom-id-123" \
+  -d '{"file_ids": [70000, 70007, 70014]}'
+
+# Response:
+# {
+#   "jobId": "550e8400-e29b-41d4-a716-446655440000",
+#   "status": "queued",
+#   "totalFileIds": 3,
+#   "statusUrl": "/v1/download/status/550e8400-e29b-41d4-a716-446655440000",
+#   "streamUrl": "/v1/download/stream/550e8400-e29b-41d4-a716-446655440000"
+# }
+```
+
+#### 3. Check Job Status (Polling)
+
+```bash
+# Replace {jobId} with actual job ID
+curl http://36.255.70.250:3000/v1/download/status/{jobId}
+
+# Response (in-progress):
+# {
+#   "jobId": "550e8400-e29b-41d4-a716-446655440000",
+#   "status": "processing",
+#   "progress": {
+#     "processed": 1,
+#     "total": 3,
+#     "available": 1
+#   }
+# }
+
+# Response (completed):
+# {
+#   "jobId": "550e8400-e29b-41d4-a716-446655440000",
+#   "status": "completed",
+#   "progress": {
+#     "processed": 3,
+#     "total": 3,
+#     "available": 2
+#   },
+#   "downloadUrl": "/v1/download/550e8400-e29b-41d4-a716-446655440000"
+# }
+```
+
+#### 4. Stream Real-Time Updates (SSE)
+
+```bash
+# Using curl with SSE
+curl -N http://36.255.70.250:3000/v1/download/stream/{jobId}
+
+# Using EventSource in JavaScript:
+# const eventSource = new EventSource('http://36.255.70.250:3000/v1/download/stream/{jobId}');
+# eventSource.onmessage = (event) => {
+#   const data = JSON.parse(event.data);
+#   console.log('Progress:', data.progress);
+# };
+```
+
+#### 5. Check Single File Availability
+
+```bash
+# Production
+curl -X POST http://36.255.70.250:3000/v1/download/check \
+  -H "Content-Type: application/json" \
+  -d '{"file_id": 70000}'
+
+# Response:
+# {
+#   "file_id": 70000,
+#   "available": true,
+#   "downloadUrl": "https://..."
+# }
+```
+
+#### 6. Download Completed Job
+
+```bash
+# Browser or wget/curl
+wget http://36.255.70.250:3000/v1/download/{jobId}
+
+# This redirects to a presigned S3 URL for direct download
+```
+
+### Request Headers
+
+| Header            | Required | Description                              |
+| ----------------- | -------- | ---------------------------------------- |
+| `Content-Type`    | Yes      | Must be `application/json` for POST      |
+| `X-Request-ID`    | No       | Custom request ID for tracing            |
+
+### Response Headers
+
+All responses include:
+
+| Header                        | Description                              |
+| ----------------------------- | ---------------------------------------- |
+| `X-Request-ID`                | Request ID for distributed tracing       |
+| `RateLimit-Limit`             | Maximum requests allowed in window       |
+| `RateLimit-Remaining`         | Remaining requests in current window     |
+| `X-Content-Type-Options`      | Security header: `nosniff`               |
+| `X-Frame-Options`             | Security header: `DENY`                  |
+| `Strict-Transport-Security`   | HSTS header for HTTPS enforcement        |
 
 ### Testing the Long-Running Download
 
