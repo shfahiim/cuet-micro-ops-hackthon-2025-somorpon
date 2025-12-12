@@ -8,13 +8,14 @@ services:
     image: minio/minio:latest
     container_name: delineate-minio
     ports:
-      - "9000:9000"
+      - "9000:9000" # S3 API
+      - "9001:9001" # Web Console
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     volumes:
       - minio_data:/data
-    command: server /data
+    command: server /data --console-address ":9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
@@ -40,9 +41,25 @@ services:
       sleep 2;
       mc alias set myminio http://minio:9000 minioadmin minioadmin;
       mc mb myminio/downloads --ignore-existing;
+      mc anonymous set download myminio/downloads;
       echo '✅ Bucket downloads created!';
       exit 0;
       "
+    networks:
+      - delineate-network
+
+  # ============================================
+  # Jaeger - Distributed Tracing
+  # ============================================
+  delineate-jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: delineate-jaeger
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "4318:4318" # OTLP HTTP
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    restart: unless-stopped
     networks:
       - delineate-network
 
@@ -65,9 +82,12 @@ services:
       - S3_SECRET_ACCESS_KEY=minioadmin
       - S3_BUCKET_NAME=downloads
       - S3_FORCE_PATH_STYLE=true
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://delineate-jaeger:4318
     depends_on:
       minio-init:
         condition: service_completed_successfully
+      delineate-jaeger:
+        condition: service_started
     restart: unless-stopped
     networks:
       - delineate-network
