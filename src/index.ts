@@ -634,7 +634,7 @@ app.doc("/openapi", {
 });
 
 // Scalar API docs
-app.get("/docs", Scalar({ url: "/openapi" }))
+app.get("/docs", Scalar({ url: "/openapi" }));
 
 // Graceful shutdown handler
 const gracefulShutdown = (server: ServerType) => (signal: string) => {

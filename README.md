@@ -92,10 +92,12 @@ SSH_PRIVATE_KEY         # SSH private key for authentication
 ### Slack Notifications
 
 The pipeline sends rich notifications to Slack on:
+
 - ✅ **Success**: All stages pass, deployment complete
 - ❌ **Failure**: Any stage fails with details and links
 
 Notifications include:
+
 - Repository and branch information
 - Commit message and author
 - Direct link to workflow run
@@ -398,6 +400,7 @@ Your pipeline must include these stages:
 #### Implementation Details
 
 See `CI-CD-SETUP.md` for complete documentation including:
+
 - Pipeline architecture and flow
 - Configuration details for each stage
 - GitHub secrets setup guide

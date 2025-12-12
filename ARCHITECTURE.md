@@ -519,7 +519,7 @@ export function DownloadManager({ fileIds }: { fileIds: number[] }) {
 
 ## 8. Implementation Roadmap
 
-### Phase 1: Backend Infrastructure 
+### Phase 1: Backend Infrastructure
 
 **Tasks:**
 
@@ -551,7 +551,7 @@ export function DownloadManager({ fileIds }: { fileIds: number[] }) {
 - E2E tests for all endpoints
 - Updated API documentation
 
-### Phase 3: Frontend Integration 
+### Phase 3: Frontend Integration
 
 **Tasks:**
 
@@ -567,7 +567,7 @@ export function DownloadManager({ fileIds }: { fileIds: number[] }) {
 - Real-time progress updates
 - Graceful fallback handling
 
-### Phase 4: Production Hardening 
+### Phase 4: Production Hardening
 
 **Tasks:**
 
