@@ -17,6 +17,7 @@ All three required milestones have been successfully implemented, tested, and ve
 ### ✅ Milestone 1: S3 Storage Integration (15/15 points)
 
 **What was implemented:**
+
 - MinIO S3-compatible storage service in Docker Compose
 - Automatic bucket creation on startup
 - Health checks and service dependencies
@@ -24,6 +25,7 @@ All three required milestones have been successfully implemented, tested, and ve
 - Network configuration between services
 
 **Verification:**
+
 ```bash
 ✅ Health endpoint returns: {"status":"healthy","checks":{"storage":"ok"}}
 ✅ MinIO console accessible at http://localhost:9001
@@ -32,6 +34,7 @@ All three required milestones have been successfully implemented, tested, and ve
 ```
 
 **Files Modified:**
+
 - `docker/compose.dev.yml`
 - `docker/compose.prod.yml`
 
@@ -40,6 +43,7 @@ All three required milestones have been successfully implemented, tested, and ve
 ### ✅ Milestone 2: CI/CD Pipeline (10/10 points)
 
 **What was implemented:**
+
 - Enhanced GitHub Actions workflow with 4 stages
 - MinIO service container for E2E tests
 - npm dependency caching
@@ -48,12 +52,14 @@ All three required milestones have been successfully implemented, tested, and ve
 - CI/CD badge in README
 
 **Pipeline Stages:**
+
 1. 🔍 Lint & Format - ESLint and Prettier checks
 2. 🧪 E2E Tests - Tests with real MinIO instance
 3. 🐳 Build Docker Image - Build and push to registry
 4. 🔒 Security Scan - Trivy vulnerability scanning
 
 **Files Modified:**
+
 - `.github/workflows/ci.yml`
 - `README.md`
 
@@ -62,6 +68,7 @@ All three required milestones have been successfully implemented, tested, and ve
 ### ✅ Milestone 3: Architecture Design (15/15 points)
 
 **What was implemented:**
+
 - Comprehensive 14-section architecture document
 - Problem statement and current limitations
 - Architecture diagram with all components
@@ -74,6 +81,7 @@ All three required milestones have been successfully implemented, tested, and ve
 - Error handling, performance, monitoring, security, and cost analysis
 
 **File Created:**
+
 - `ARCHITECTURE.md` (comprehensive design document)
 
 ---
@@ -81,11 +89,13 @@ All three required milestones have been successfully implemented, tested, and ve
 ## 📚 Documentation Created
 
 ### Core Documentation
+
 1. **ARCHITECTURE.md** - Complete architecture design (Milestone 3)
 2. **README.md** - Updated with CI/CD section
 3. **PLAN.md** - Original implementation plan (provided)
 
 ### Supporting Documentation (in `docs/`)
+
 1. **QUICK-START.md** - Get running in 5 minutes
 2. **VERIFICATION.md** - Step-by-step verification guide
 3. **DOCKER-COMMANDS.md** - Comprehensive Docker reference
@@ -93,6 +103,7 @@ All three required milestones have been successfully implemented, tested, and ve
 5. **README.md** - Documentation index
 
 ### Additional Files
+
 1. **CHECKLIST.md** - Pre-submission checklist
 2. **TEST-REPORT.md** - Complete test verification report
 3. **IMPLEMENTATION-COMPLETE.md** - This document
@@ -102,6 +113,7 @@ All three required milestones have been successfully implemented, tested, and ve
 ## 🧪 Test Results
 
 ### E2E Test Suite
+
 ```
 Total Tests:  29
 Passed:       29
@@ -110,6 +122,7 @@ Success Rate: 100%
 ```
 
 ### Test Categories (All Passed)
+
 - ✅ Root Endpoint (1/1)
 - ✅ Health Endpoint (3/3)
 - ✅ Security Headers (7/7)
@@ -121,6 +134,7 @@ Success Rate: 100%
 - ✅ Rate Limiting (2/2)
 
 ### Manual API Tests
+
 - ✅ Health endpoint returns "storage": "ok"
 - ✅ Download check endpoint functional
 - ✅ Download initiate endpoint functional
@@ -132,6 +146,7 @@ Success Rate: 100%
 ## 🚀 Quick Start Commands
 
 ### Start the Project
+
 ```bash
 cd cuet-micro-ops-hackthon-2025-somorpon
 
@@ -146,11 +161,13 @@ npm run test:e2e
 ```
 
 ### Access Services
+
 - **API Documentation:** http://localhost:3000/docs
 - **MinIO Console:** http://localhost:9001 (minioadmin/minioadmin)
 - **Jaeger Tracing:** http://localhost:16686
 
 ### Stop Services
+
 ```bash
 docker compose -f docker/compose.dev.yml down
 ```
@@ -197,13 +214,13 @@ cuet-micro-ops-hackthon-2025-somorpon/
 
 ## 🎯 Points Breakdown
 
-| Milestone | Description | Points | Status |
-|-----------|-------------|--------|--------|
-| **Milestone 1** | S3 Storage Integration | 15/15 | ✅ Complete |
-| **Milestone 2** | CI/CD Pipeline | 10/10 | ✅ Complete |
-| **Milestone 3** | Architecture Design | 15/15 | ✅ Complete |
-| **Milestone 4** | Observability (Bonus) | 0/10 | ⏸️ Not Implemented |
-| **TOTAL** | | **40/50** | **80%** |
+| Milestone       | Description            | Points    | Status             |
+| --------------- | ---------------------- | --------- | ------------------ |
+| **Milestone 1** | S3 Storage Integration | 15/15     | ✅ Complete        |
+| **Milestone 2** | CI/CD Pipeline         | 10/10     | ✅ Complete        |
+| **Milestone 3** | Architecture Design    | 15/15     | ✅ Complete        |
+| **Milestone 4** | Observability (Bonus)  | 0/10      | ⏸️ Not Implemented |
+| **TOTAL**       |                        | **40/50** | **80%**            |
 
 ---
 
@@ -212,6 +229,7 @@ cuet-micro-ops-hackthon-2025-somorpon/
 ### Demo Script
 
 **1. Show Docker Compose Configuration (Milestone 1)**
+
 ```bash
 # Show MinIO configuration
 cat docker/compose.dev.yml
@@ -233,12 +251,14 @@ npm run test:e2e
 ```
 
 **2. Show CI/CD Pipeline (Milestone 2)**
+
 - Navigate to GitHub Actions page
 - Show the 4-stage pipeline
 - Explain each stage
 - Show successful runs
 
 **3. Walk Through Architecture (Milestone 3)**
+
 - Open `ARCHITECTURE.md`
 - Explain the problem statement
 - Show the architecture diagram
@@ -252,6 +272,7 @@ npm run test:e2e
 ## ✅ Pre-Submission Checklist
 
 ### Code & Implementation
+
 - [x] All milestones implemented
 - [x] Code committed to Git
 - [x] All tests passing (29/29)
@@ -259,6 +280,7 @@ npm run test:e2e
 - [x] Documentation complete
 
 ### Testing
+
 - [x] E2E tests pass locally
 - [x] Health endpoint returns "ok"
 - [x] API endpoints functional
@@ -266,6 +288,7 @@ npm run test:e2e
 - [x] MinIO accessible
 
 ### Documentation
+
 - [x] ARCHITECTURE.md complete
 - [x] README updated
 - [x] Quick start guide created
@@ -273,6 +296,7 @@ npm run test:e2e
 - [x] All documentation reviewed
 
 ### CI/CD
+
 - [x] Pipeline configuration complete
 - [x] Ready to push to GitHub
 - [x] CI badge in README
@@ -284,6 +308,7 @@ npm run test:e2e
 ### To Submit:
 
 1. **Commit and Push**
+
 ```bash
 git add .
 git commit -m "feat: implement milestones 1-3 (S3, CI/CD, Architecture)"
@@ -291,15 +316,18 @@ git push origin main
 ```
 
 2. **Verify CI/CD Pipeline**
+
 - Go to GitHub Actions
 - Verify all stages pass
 
 3. **Prepare Demo**
+
 - Follow demo script above
 - Practice explaining architecture
 - Prepare to show running services
 
 4. **Submit**
+
 - GitHub repository URL
 - Link to successful CI/CD run
 - Screenshots of working services
@@ -307,6 +335,7 @@ git push origin main
 ### Optional (Bonus 10 points):
 
 If you want to implement **Milestone 4: Observability Dashboard**:
+
 - See `PLAN.md` for detailed instructions
 - Create React frontend with Vite
 - Integrate Sentry for error tracking
@@ -318,12 +347,14 @@ If you want to implement **Milestone 4: Observability Dashboard**:
 ## 📞 Support Resources
 
 ### Documentation
+
 - **Quick Start:** `docs/QUICK-START.md`
 - **Verification:** `docs/VERIFICATION.md`
 - **Docker Help:** `docs/DOCKER-COMMANDS.md`
 - **Architecture:** `ARCHITECTURE.md`
 
 ### Troubleshooting
+
 - Check `docs/VERIFICATION.md` → Troubleshooting section
 - Review Docker logs: `docker compose -f docker/compose.dev.yml logs`
 - See `docs/DOCKER-COMMANDS.md` → Common Issues
@@ -337,6 +368,7 @@ You have successfully implemented 3 out of 4 milestones for the CUET Micro-Ops H
 **Achievement: 40/50 points (80%)**
 
 The project includes:
+
 - ✅ Working S3 storage with MinIO
 - ✅ Enhanced CI/CD pipeline with 4 stages
 - ✅ Comprehensive architecture design

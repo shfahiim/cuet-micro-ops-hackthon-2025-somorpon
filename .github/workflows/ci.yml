@@ -24,8 +24,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
-          cache: 'npm'
+          node-version: "24"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -64,8 +64,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
-          cache: 'npm'
+          node-version: "24"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -157,11 +157,11 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'table'
-          exit-code: '0'
-          severity: 'CRITICAL,HIGH'
+          scan-type: "fs"
+          scan-ref: "."
+          format: "table"
+          exit-code: "0"
+          severity: "CRITICAL,HIGH"
 
   # ==========================================
   # STAGE 5: Deploy to Production Server
@@ -183,21 +183,21 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd cuet-micro-ops-hackthon-2025-somorpon || exit 1
-            
+
             echo "📥 Pulling latest changes..."
             git pull origin main
-            
+
             echo "🐳 Stopping services..."
             docker compose -f docker/compose.prod.yml down
-            
+
             echo "🔨 Building and starting services..."
             docker compose -f docker/compose.prod.yml up -d --build
-            
+
             echo "⏳ Waiting for services to be ready..."
             sleep 30
-            
+
             echo "✅ Checking health endpoint..."
             curl -f http://localhost:3000/health || exit 1
-            
+
             echo "🎉 Deployment successful!"
             docker compose -f docker/compose.prod.yml ps

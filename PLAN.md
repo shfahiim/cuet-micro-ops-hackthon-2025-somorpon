@@ -10,13 +10,13 @@
 
 Before starting, ensure you have these installed:
 
-| Tool | Required Version | Check Command |
-|------|-----------------|---------------|
-| Node.js | >= 24.10.0 | `node --version` |
-| npm | >= 10.x | `npm --version` |
-| Docker | >= 24.x | `docker --version` |
-| Docker Compose | >= 2.x | `docker compose version` |
-| Git | Latest | `git --version` |
+| Tool           | Required Version | Check Command            |
+| -------------- | ---------------- | ------------------------ |
+| Node.js        | >= 24.10.0       | `node --version`         |
+| npm            | >= 10.x          | `npm --version`          |
+| Docker         | >= 24.x          | `docker --version`       |
+| Docker Compose | >= 2.x           | `docker compose version` |
+| Git            | Latest           | `git --version`          |
 
 ### Initial Setup Commands
 
@@ -48,13 +48,13 @@ This document outlines a step-by-step implementation plan for the CUET Micro-Ops
 
 ### Points Breakdown
 
-| Challenge | Max Points | Difficulty | Priority |
-|-----------|------------|------------|----------|
-| Challenge 1: S3 Storage Integration | 15 | Medium | 🔴 HIGH |
-| Challenge 3: CI/CD Pipeline | 10 | Medium | 🔴 HIGH |
-| Challenge 2: Architecture Design | 15 | Hard | 🟡 MEDIUM |
-| Challenge 4: Observability (Bonus) | 10 | Hard | 🟢 LOW |
-| **Maximum Total** | **50** | | |
+| Challenge                           | Max Points | Difficulty | Priority  |
+| ----------------------------------- | ---------- | ---------- | --------- |
+| Challenge 1: S3 Storage Integration | 15         | Medium     | 🔴 HIGH   |
+| Challenge 3: CI/CD Pipeline         | 10         | Medium     | 🔴 HIGH   |
+| Challenge 2: Architecture Design    | 15         | Hard       | 🟡 MEDIUM |
+| Challenge 4: Observability (Bonus)  | 10         | Hard       | 🟢 LOW    |
+| **Maximum Total**                   | **50**     |            |           |
 
 ---
 
@@ -97,9 +97,11 @@ This document outlines a step-by-step implementation plan for the CUET Micro-Ops
 # 📌 MILESTONE 1: S3 Storage Integration (15 Points)
 
 ## Objective
+
 Add a self-hosted S3-compatible storage service (MinIO) to Docker Compose and verify health endpoint returns `"storage": "ok"`.
 
 ## Current State
+
 - ✅ Docker Compose files exist
 - ✅ S3 client configured in `src/index.ts`
 - ❌ No S3 service in Docker Compose
@@ -124,8 +126,8 @@ services:
     image: minio/minio:latest
     container_name: delineate-minio
     ports:
-      - "9000:9000"   # S3 API
-      - "9001:9001"   # Web Console
+      - "9000:9000" # S3 API
+      - "9001:9001" # Web Console
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
@@ -170,8 +172,8 @@ services:
     image: jaegertracing/all-in-one:latest
     container_name: delineate-jaeger
     ports:
-      - "16686:16686"   # Jaeger UI
-      - "4318:4318"     # OTLP HTTP
+      - "16686:16686" # Jaeger UI
+      - "4318:4318" # OTLP HTTP
     environment:
       - COLLECTOR_OTLP_ENABLED=true
     networks:
@@ -217,6 +219,7 @@ networks:
 ```
 
 **Command to edit:**
+
 ```bash
 nano docker/compose.dev.yml
 # OR
@@ -361,6 +364,7 @@ npm run test:e2e
 ### Step 1.6: (Optional) Access MinIO Console
 
 Open in browser:
+
 - **URL:** http://localhost:9001
 - **Username:** minioadmin
 - **Password:** minioadmin
@@ -383,9 +387,11 @@ You should see the `downloads` bucket.
 # 📌 MILESTONE 2: CI/CD Pipeline Setup (10 Points)
 
 ## Objective
+
 Enhance the GitHub Actions workflow with proper testing, caching, and Docker build stages.
 
 ## Current State
+
 - ✅ Basic CI workflow exists at `.github/workflows/ci.yml`
 - ❌ No npm caching
 - ❌ E2E tests run without S3
@@ -426,8 +432,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
-          cache: 'npm'
+          node-version: "24"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -466,8 +472,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
-          cache: 'npm'
+          node-version: "24"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -559,14 +565,15 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'table'
-          exit-code: '0'
-          severity: 'CRITICAL,HIGH'
+          scan-type: "fs"
+          scan-ref: "."
+          format: "table"
+          exit-code: "0"
+          severity: "CRITICAL,HIGH"
 ```
 
 **Command to edit:**
+
 ```bash
 nano .github/workflows/ci.yml
 # OR
@@ -585,14 +592,15 @@ code .github/workflows/ci.yml
 [![CI/CD Pipeline](https://github.com/shfahiim/cuet-micro-ops-hackthon-2025-somorpon/actions/workflows/ci.yml/badge.svg)](https://github.com/shfahiim/cuet-micro-ops-hackthon-2025-somorpon/actions/workflows/ci.yml)
 
 ### Pipeline Stages
+```
 
-```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│  🔍 Lint    │───▶│  🧪 Test    │───▶│  🐳 Build   │───▶│  🔒 Scan    │
-│  ESLint +   │    │  E2E with   │    │  Docker     │    │  Trivy      │
-│  Prettier   │    │  MinIO      │    │  Image      │    │  Security   │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-```
+┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+│ 🔍 Lint │───▶│ 🧪 Test │───▶│ 🐳 Build │───▶│ 🔒 Scan │
+│ ESLint + │ │ E2E with │ │ Docker │ │ Trivy │
+│ Prettier │ │ MinIO │ │ Image │ │ Security │
+└─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘
+
+````
 
 ### Running Tests Locally
 
@@ -609,10 +617,11 @@ npm run format:check
 # Run E2E tests (with Docker MinIO)
 npm run docker:dev  # Start services first
 npm run test:e2e
-```
+````
 
 ---
-```
+
+````
 
 ---
 
@@ -627,7 +636,7 @@ git commit -m "feat: add MinIO S3 storage and enhanced CI/CD pipeline"
 
 # Push to trigger the pipeline
 git push origin main
-```
+````
 
 ---
 
@@ -652,6 +661,7 @@ git push origin main
 # 📌 MILESTONE 3: Architecture Design Document (15 Points)
 
 ## Objective
+
 Create `ARCHITECTURE.md` documenting a solution for handling long-running downloads.
 
 ---
@@ -663,6 +673,7 @@ Create `ARCHITECTURE.md` documenting a solution for handling long-running downlo
 **Action:** Create a new file `ARCHITECTURE.md` in the project root.
 
 **Run this command to create the file:**
+
 ```bash
 touch ARCHITECTURE.md
 code ARCHITECTURE.md
@@ -673,6 +684,7 @@ code ARCHITECTURE.md
 Your `ARCHITECTURE.md` must include:
 
 #### Section 1: Problem Statement
+
 - Explain why current approach fails with proxies (100s timeout)
 - Connection timeouts, gateway errors, poor UX
 
@@ -711,12 +723,12 @@ Include an ASCII or Mermaid diagram:
 
 **Recommended: Hybrid Polling + Server-Sent Events (SSE)**
 
-| Pattern | Pros | Cons |
-|---------|------|------|
-| Polling | Simple, works everywhere | More requests, delay |
-| SSE | Real-time, efficient | Proxy support needed |
-| WebSocket | Bi-directional | Complex, overkill |
-| Webhook | Decoupled | Requires callback URL |
+| Pattern   | Pros                     | Cons                  |
+| --------- | ------------------------ | --------------------- |
+| Polling   | Simple, works everywhere | More requests, delay  |
+| SSE       | Real-time, efficient     | Proxy support needed  |
+| WebSocket | Bi-directional           | Complex, overkill     |
+| Webhook   | Decoupled                | Requires callback URL |
 
 **Justification:** SSE for real-time with polling fallback.
 
@@ -728,7 +740,7 @@ POST /v1/download/initiate
   Response: { jobId: "uuid", status: "queued", totalFileIds: 2 }
 
 GET /v1/download/status/:jobId
-  Response: { 
+  Response: {
     jobId: "uuid",
     status: "processing" | "completed" | "failed",
     progress: 50,
@@ -770,6 +782,7 @@ downloads:processing → Set of jobIds
 #### Section 6: Proxy Configuration
 
 **Nginx:**
+
 ```nginx
 location /v1/download/stream {
     proxy_pass http://api:3000;
@@ -787,6 +800,7 @@ location /v1/download {
 ```
 
 **Cloudflare:**
+
 - Enable WebSocket support
 - Use Cloudflare Workers for SSE handling
 - Increase timeout with Enterprise plan or use polling
@@ -796,30 +810,34 @@ location /v1/download {
 ```tsx
 // useDownload.ts
 function useDownload(fileIds: number[]) {
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [status, setStatus] = useState<
+    "idle" | "loading" | "success" | "error"
+  >("idle");
   const [progress, setProgress] = useState(0);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
 
   const startDownload = async () => {
-    setStatus('loading');
-    
+    setStatus("loading");
+
     // 1. Initiate download
-    const { jobId } = await api.post('/v1/download/initiate', { file_ids: fileIds });
-    
+    const { jobId } = await api.post("/v1/download/initiate", {
+      file_ids: fileIds,
+    });
+
     // 2. Connect to SSE stream
     const eventSource = new EventSource(`/v1/download/stream/${jobId}`);
-    
+
     eventSource.onmessage = (event) => {
       const data = JSON.parse(event.data);
       setProgress(data.progress);
-      
-      if (data.status === 'completed') {
+
+      if (data.status === "completed") {
         setDownloadUrl(data.downloadUrl);
-        setStatus('success');
+        setStatus("success");
         eventSource.close();
       }
     };
-    
+
     eventSource.onerror = () => {
       // Fallback to polling
       pollStatus(jobId);
@@ -847,6 +865,7 @@ function useDownload(fileIds: number[]) {
 # 📌 MILESTONE 4: Observability Dashboard (10 Bonus Points)
 
 ## Objective
+
 Build a React UI with Sentry error tracking and OpenTelemetry tracing.
 
 ---
@@ -895,20 +914,23 @@ CMD ["nginx", "-g", "daemon off;"]
 **Create `frontend/src/components/HealthStatus.tsx`:**
 
 ```tsx
-import { useEffect, useState } from 'react';
-import axios from 'axios';
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 export function HealthStatus() {
-  const [health, setHealth] = useState<{ status: string; checks: { storage: string } } | null>(null);
+  const [health, setHealth] = useState<{
+    status: string;
+    checks: { storage: string };
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchHealth = async () => {
       try {
-        const response = await axios.get('http://localhost:3000/health');
+        const response = await axios.get("http://localhost:3000/health");
         setHealth(response.data);
       } catch (err) {
-        setError('Failed to fetch health status');
+        setError("Failed to fetch health status");
       }
     };
 
@@ -923,8 +945,12 @@ export function HealthStatus() {
   return (
     <div className="health-status">
       <h2>API Health</h2>
-      <p>Status: <strong>{health.status}</strong></p>
-      <p>Storage: <strong>{health.checks.storage}</strong></p>
+      <p>
+        Status: <strong>{health.status}</strong>
+      </p>
+      <p>
+        Storage: <strong>{health.checks.storage}</strong>
+      </p>
     </div>
   );
 }
@@ -935,20 +961,20 @@ export function HealthStatus() {
 **Add to `docker/compose.dev.yml` (before the volumes section):**
 
 ```yaml
-  # ============================================
-  # Frontend (React)
-  # ============================================
-  frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
-    container_name: delineate-frontend
-    ports:
-      - "5173:80"
-    depends_on:
-      - delineate-app
-    networks:
-      - delineate-network
+# ============================================
+# Frontend (React)
+# ============================================
+frontend:
+  build:
+    context: ../frontend
+    dockerfile: Dockerfile
+  container_name: delineate-frontend
+  ports:
+    - "5173:80"
+  depends_on:
+    - delineate-app
+  networks:
+    - delineate-network
 ```
 
 ### Step 4.5: Configure Sentry
@@ -960,19 +986,17 @@ export function HealthStatus() {
 
 ```tsx
 import * as Sentry from "@sentry/react";
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
 
 Sentry.init({
   dsn: "YOUR_SENTRY_DSN_HERE",
-  integrations: [
-    Sentry.browserTracingIntegration(),
-  ],
+  integrations: [Sentry.browserTracingIntegration()],
   tracesSampleRate: 1.0,
 });
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <Sentry.ErrorBoundary fallback={<p>An error occurred</p>}>
       <App />
@@ -1014,19 +1038,20 @@ curl -X POST "http://localhost:3000/v1/download/check?sentry_test=true" \
 
 # ⏱️ Time Estimation
 
-| Milestone | Estimated Time | Points |
-|-----------|---------------|--------|
-| Milestone 1: S3 Storage | 2-3 hours | 15 |
-| Milestone 2: CI/CD Pipeline | 1-2 hours | 10 |
-| Milestone 3: Architecture Doc | 2-3 hours | 15 |
-| Milestone 4: Observability | 3-4 hours | 10 |
-| **Total** | **8-12 hours** | **50** |
+| Milestone                     | Estimated Time | Points |
+| ----------------------------- | -------------- | ------ |
+| Milestone 1: S3 Storage       | 2-3 hours      | 15     |
+| Milestone 2: CI/CD Pipeline   | 1-2 hours      | 10     |
+| Milestone 3: Architecture Doc | 2-3 hours      | 15     |
+| Milestone 4: Observability    | 3-4 hours      | 10     |
+| **Total**                     | **8-12 hours** | **50** |
 
 ---
 
 # 🎬 Demo Strategy
 
 ## Demo Point 1 (After Milestone 1) - 15 Points
+
 ```bash
 # Show Docker Compose with MinIO
 cat docker/compose.dev.yml
@@ -1048,17 +1073,20 @@ npm run test:e2e
 ```
 
 ## Demo Point 2 (After Milestone 2) - 25 Points
+
 - Show GitHub Actions page
 - Point out all stages passing (Lint → Test → Build → Scan)
 - Show the Docker image in packages
 
 ## Demo Point 3 (After Milestone 3) - 40 Points
+
 - Walk through ARCHITECTURE.md
 - Explain the diagram
 - Justify the hybrid SSE + polling approach
 - Show Redis schema design
 
 ## Demo Point 4 (After Milestone 4) - 50 Points
+
 - Show React dashboard at http://localhost:5173
 - Show health status updating in real-time
 - Trigger Sentry error and show in dashboard
@@ -1101,22 +1129,23 @@ git push origin main
 
 # 📁 Files to Create/Modify Summary
 
-| File | Action | Milestone |
-|------|--------|-----------|
-| `docker/compose.dev.yml` | **MODIFY** | 1 |
-| `docker/compose.prod.yml` | **MODIFY** | 1 |
-| `.github/workflows/ci.yml` | **MODIFY** | 2 |
-| `README.md` | **MODIFY** (add CI/CD section) | 2 |
-| `ARCHITECTURE.md` | **CREATE** | 3 |
-| `frontend/` | **CREATE** (entire directory) | 4 |
-| `frontend/Dockerfile` | **CREATE** | 4 |
-| `frontend/src/components/` | **CREATE** | 4 |
+| File                       | Action                         | Milestone |
+| -------------------------- | ------------------------------ | --------- |
+| `docker/compose.dev.yml`   | **MODIFY**                     | 1         |
+| `docker/compose.prod.yml`  | **MODIFY**                     | 1         |
+| `.github/workflows/ci.yml` | **MODIFY**                     | 2         |
+| `README.md`                | **MODIFY** (add CI/CD section) | 2         |
+| `ARCHITECTURE.md`          | **CREATE**                     | 3         |
+| `frontend/`                | **CREATE** (entire directory)  | 4         |
+| `frontend/Dockerfile`      | **CREATE**                     | 4         |
+| `frontend/src/components/` | **CREATE**                     | 4         |
 
 ---
 
 # 🚨 Troubleshooting
 
 ## MinIO not starting?
+
 ```bash
 # Check if port 9000 is in use
 sudo lsof -i :9000
@@ -1127,6 +1156,7 @@ docker compose -f docker/compose.dev.yml up --build
 ```
 
 ## Health check still failing?
+
 ```bash
 # Check if MinIO is healthy
 docker ps
@@ -1139,6 +1169,7 @@ docker logs delineate-app
 ```
 
 ## E2E tests failing?
+
 ```bash
 # Make sure Docker services are running
 docker compose -f docker/compose.dev.yml ps
@@ -1151,6 +1182,7 @@ npm run test:e2e
 ```
 
 ## GitHub Actions failing?
+
 - Check the Actions tab for error logs
 - Ensure MinIO service container is healthy before bucket creation
 - Verify all environment variables are set

@@ -8,16 +8,16 @@ Complete guide for deploying to your server at `36.255.70.250`.
 
 ### Required Ports (Inbound Rules)
 
-| Port | Protocol | Service | Source | Purpose |
-|------|----------|---------|--------|---------|
-| **22** | TCP | SSH | Your IP | Server management |
-| **80** | TCP | HTTP | 0.0.0.0/0 | Web traffic (redirect to HTTPS) |
-| **443** | TCP | HTTPS | 0.0.0.0/0 | Secure web traffic |
-| **3000** | TCP | API Server | 0.0.0.0/0 | Main application API |
-| **9000** | TCP | MinIO API | 0.0.0.0/0 | S3-compatible storage API |
-| **9001** | TCP | MinIO Console | Your IP | MinIO admin interface |
-| **16686** | TCP | Jaeger UI | Your IP | Distributed tracing dashboard |
-| **5173** | TCP | Frontend (optional) | 0.0.0.0/0 | React dashboard (Milestone 4) |
+| Port      | Protocol | Service             | Source    | Purpose                         |
+| --------- | -------- | ------------------- | --------- | ------------------------------- |
+| **22**    | TCP      | SSH                 | Your IP   | Server management               |
+| **80**    | TCP      | HTTP                | 0.0.0.0/0 | Web traffic (redirect to HTTPS) |
+| **443**   | TCP      | HTTPS               | 0.0.0.0/0 | Secure web traffic              |
+| **3000**  | TCP      | API Server          | 0.0.0.0/0 | Main application API            |
+| **9000**  | TCP      | MinIO API           | 0.0.0.0/0 | S3-compatible storage API       |
+| **9001**  | TCP      | MinIO Console       | Your IP   | MinIO admin interface           |
+| **16686** | TCP      | Jaeger UI           | Your IP   | Distributed tracing dashboard   |
+| **5173**  | TCP      | Frontend (optional) | 0.0.0.0/0 | React dashboard (Milestone 4)   |
 
 ### Security Group Rules (AWS/Cloud Provider Format)
 
@@ -91,6 +91,7 @@ Port 3000 → API (All)
 ```
 
 Then use Nginx reverse proxy to route:
+
 - `/` → Frontend
 - `/api` → API Server
 - `/minio` → MinIO (internal only)
@@ -221,13 +222,14 @@ curl http://36.255.70.250:3000/health
 3. Click **New repository secret**
 4. Add these secrets:
 
-| Secret Name | Value |
-|-------------|-------|
+| Secret Name       | Value                          |
+| ----------------- | ------------------------------ |
 | `SSH_PRIVATE_KEY` | Contents of `somorpon-key.pem` |
-| `SSH_HOST` | `36.255.70.250` |
-| `SSH_USER` | `ubuntu` |
+| `SSH_HOST`        | `36.255.70.250`                |
+| `SSH_USER`        | `ubuntu`                       |
 
 **To get SSH_PRIVATE_KEY value:**
+
 ```bash
 cat somorpon-key.pem
 # Copy the entire output including:
@@ -246,19 +248,20 @@ The workflow will now include automatic deployment to your server.
 
 After deployment, access your services:
 
-| Service | URL | Credentials |
-|---------|-----|-------------|
-| **API Server** | http://36.255.70.250:3000 | - |
-| **API Docs** | http://36.255.70.250:3000/docs | - |
-| **Health Check** | http://36.255.70.250:3000/health | - |
-| **MinIO Console** | http://36.255.70.250:9001 | minioadmin / minioadmin |
-| **Jaeger UI** | http://36.255.70.250:16686 | - |
+| Service           | URL                              | Credentials             |
+| ----------------- | -------------------------------- | ----------------------- |
+| **API Server**    | http://36.255.70.250:3000        | -                       |
+| **API Docs**      | http://36.255.70.250:3000/docs   | -                       |
+| **Health Check**  | http://36.255.70.250:3000/health | -                       |
+| **MinIO Console** | http://36.255.70.250:9001        | minioadmin / minioadmin |
+| **Jaeger UI**     | http://36.255.70.250:16686       | -                       |
 
 ---
 
 ## 🔧 Management Commands
 
 ### View Logs
+
 ```bash
 ssh -i somorpon-key.pem ubuntu@36.255.70.250
 cd cuet-micro-ops-hackthon-2025-somorpon
@@ -266,11 +269,13 @@ docker compose -f docker/compose.prod.yml logs -f
 ```
 
 ### Restart Services
+
 ```bash
 docker compose -f docker/compose.prod.yml restart
 ```
 
 ### Update Deployment
+
 ```bash
 # Pull latest changes
 git pull origin main
@@ -280,11 +285,13 @@ docker compose -f docker/compose.prod.yml up -d --build
 ```
 
 ### Stop Services
+
 ```bash
 docker compose -f docker/compose.prod.yml down
 ```
 
 ### Clean Restart
+
 ```bash
 docker compose -f docker/compose.prod.yml down -v
 docker compose -f docker/compose.prod.yml up -d --build
@@ -297,12 +304,14 @@ docker compose -f docker/compose.prod.yml up -d --build
 ### 1. Change MinIO Credentials
 
 Edit `.env`:
+
 ```env
 S3_ACCESS_KEY_ID=your_secure_access_key
 S3_SECRET_ACCESS_KEY=your_secure_secret_key_min_8_chars
 ```
 
 Restart services:
+
 ```bash
 docker compose -f docker/compose.prod.yml down
 docker compose -f docker/compose.prod.yml up -d
@@ -379,6 +388,7 @@ server {
 ```
 
 Enable and restart:
+
 ```bash
 sudo ln -s /etc/nginx/sites-available/delineate /etc/nginx/sites-enabled/
 sudo nginx -t
@@ -402,21 +412,25 @@ sudo certbot --nginx -d yourdomain.com
 ## 📊 Monitoring
 
 ### Check Service Status
+
 ```bash
 docker compose -f docker/compose.prod.yml ps
 ```
 
 ### Check Resource Usage
+
 ```bash
 docker stats
 ```
 
 ### Check Disk Space
+
 ```bash
 df -h
 ```
 
 ### Check Logs
+
 ```bash
 # All services
 docker compose -f docker/compose.prod.yml logs --tail=100
@@ -490,7 +504,7 @@ du -sh /var/lib/docker
 **SSH:** `ssh -i somorpon-key.pem ubuntu@36.255.70.250`  
 **Project Path:** `/home/ubuntu/cuet-micro-ops-hackthon-2025-somorpon`  
 **Logs:** `docker compose -f docker/compose.prod.yml logs -f`  
-**Restart:** `docker compose -f docker/compose.prod.yml restart`  
+**Restart:** `docker compose -f docker/compose.prod.yml restart`
 
 ---
 

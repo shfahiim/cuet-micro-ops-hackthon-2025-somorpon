@@ -21,6 +21,7 @@ docker compose -f docker/compose.dev.yml up --build
 ### Step 2: Watch for Success Messages
 
 You should see these logs:
+
 ```
 ✅ Bucket downloads created successfully!
 Server is running on http://localhost:3000
@@ -35,8 +36,9 @@ curl http://localhost:3000/health
 ```
 
 **Expected Output:**
+
 ```json
-{"status":"healthy","checks":{"storage":"ok"}}
+{ "status": "healthy", "checks": { "storage": "ok" } }
 ```
 
 ### Step 4: Access MinIO Console (Optional)
@@ -114,11 +116,13 @@ Open `ARCHITECTURE.md` and verify it contains:
 ## 🧪 Testing Commands
 
 ### Test Health Endpoint
+
 ```bash
 curl http://localhost:3000/health
 ```
 
 ### Test Download Check
+
 ```bash
 curl -X POST http://localhost:3000/v1/download/check \
   -H "Content-Type: application/json" \
@@ -126,6 +130,7 @@ curl -X POST http://localhost:3000/v1/download/check \
 ```
 
 ### Test Download Initiate
+
 ```bash
 curl -X POST http://localhost:3000/v1/download/initiate \
   -H "Content-Type: application/json" \
@@ -133,6 +138,7 @@ curl -X POST http://localhost:3000/v1/download/initiate \
 ```
 
 ### Test Long-Running Download (Dev Mode)
+
 ```bash
 # This should complete in 5-15 seconds
 curl -X POST http://localhost:3000/v1/download/start \
@@ -141,9 +147,11 @@ curl -X POST http://localhost:3000/v1/download/start \
 ```
 
 ### Access API Documentation
+
 Open browser: http://localhost:3000/docs
 
 ### Access Jaeger Tracing UI
+
 Open browser: http://localhost:16686
 
 ---
@@ -155,6 +163,7 @@ Open browser: http://localhost:16686
 **Problem:** Container exits or health check fails
 
 **Solution:**
+
 ```bash
 # Check logs
 docker logs delineate-minio
@@ -172,6 +181,7 @@ docker compose -f docker/compose.dev.yml up --build
 **Problem:** API can't connect to MinIO
 
 **Solution:**
+
 ```bash
 # Check if MinIO is healthy
 docker ps
@@ -191,6 +201,7 @@ docker exec delineate-app ping minio
 **Problem:** Tests fail with connection errors
 
 **Solution:**
+
 ```bash
 # Ensure Docker services are running
 docker compose -f docker/compose.dev.yml ps
@@ -207,6 +218,7 @@ npm run test:e2e
 **Problem:** GitHub Actions workflow fails
 
 **Solution:**
+
 1. Check the Actions tab for detailed error logs
 2. Verify MinIO service container is healthy
 3. Ensure all environment variables are set correctly
@@ -217,6 +229,7 @@ npm run test:e2e
 ## 📊 Success Criteria
 
 ### Milestone 1 (15 points)
+
 - [x] MinIO service running in Docker Compose
 - [x] Bucket `downloads` created automatically
 - [x] Health endpoint returns `"storage": "ok"`
@@ -224,6 +237,7 @@ npm run test:e2e
 - [x] MinIO console accessible
 
 ### Milestone 2 (10 points)
+
 - [x] Enhanced CI/CD pipeline with 4 stages
 - [x] MinIO service in GitHub Actions
 - [x] npm caching enabled
@@ -232,6 +246,7 @@ npm run test:e2e
 - [x] CI badge in README
 
 ### Milestone 3 (15 points)
+
 - [x] Complete ARCHITECTURE.md document
 - [x] Architecture diagram included
 - [x] Technical approach justified

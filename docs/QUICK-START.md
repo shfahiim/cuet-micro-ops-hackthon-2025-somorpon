@@ -43,6 +43,7 @@ docker compose -f docker/compose.dev.yml up --build
 ```
 
 **Wait for these messages:**
+
 ```
 ✅ Bucket downloads created successfully!
 Server is running on http://localhost:3000
@@ -62,8 +63,9 @@ curl http://localhost:3000/health
 ```
 
 **Expected output:**
+
 ```json
-{"status":"healthy","checks":{"storage":"ok"}}
+{ "status": "healthy", "checks": { "storage": "ok" } }
 ```
 
 If you see `"storage":"ok"`, you're good to go! ✅
@@ -84,17 +86,18 @@ All tests should pass ✅
 
 Open these URLs in your browser:
 
-| Service | URL | Credentials |
-|---------|-----|-------------|
-| **API Documentation** | http://localhost:3000/docs | - |
-| **MinIO Console** | http://localhost:9001 | minioadmin / minioadmin |
-| **Jaeger Tracing** | http://localhost:16686 | - |
+| Service               | URL                        | Credentials             |
+| --------------------- | -------------------------- | ----------------------- |
+| **API Documentation** | http://localhost:3000/docs | -                       |
+| **MinIO Console**     | http://localhost:9001      | minioadmin / minioadmin |
+| **Jaeger Tracing**    | http://localhost:16686     | -                       |
 
 ---
 
 ## 🎯 Test the API
 
 ### Test 1: Check File Availability
+
 ```bash
 curl -X POST http://localhost:3000/v1/download/check \
   -H "Content-Type: application/json" \
@@ -102,6 +105,7 @@ curl -X POST http://localhost:3000/v1/download/check \
 ```
 
 ### Test 2: Initiate Download Job
+
 ```bash
 curl -X POST http://localhost:3000/v1/download/initiate \
   -H "Content-Type: application/json" \
@@ -109,6 +113,7 @@ curl -X POST http://localhost:3000/v1/download/initiate \
 ```
 
 ### Test 3: Long-Running Download (5-15s in dev mode)
+
 ```bash
 curl -X POST http://localhost:3000/v1/download/start \
   -H "Content-Type: application/json" \
@@ -134,6 +139,7 @@ docker compose -f docker/compose.dev.yml down -v
 ### Problem: Health check returns `"storage":"error"`
 
 **Solution:**
+
 ```bash
 # Stop everything
 docker compose -f docker/compose.dev.yml down -v
@@ -147,6 +153,7 @@ docker compose -f docker/compose.dev.yml up --build
 ### Problem: Port 3000 already in use
 
 **Solution:**
+
 ```bash
 # Find what's using port 3000
 sudo lsof -i :3000
@@ -161,6 +168,7 @@ echo "PORT=3001" >> .env
 ### Problem: Tests failing
 
 **Solution:**
+
 ```bash
 # Make sure Docker services are running
 docker compose -f docker/compose.dev.yml ps
@@ -187,6 +195,7 @@ npm run test:e2e
 ## 🎉 You're Ready!
 
 The project is now running with:
+
 - ✅ MinIO S3 storage
 - ✅ Jaeger distributed tracing
 - ✅ API server with OpenAPI docs

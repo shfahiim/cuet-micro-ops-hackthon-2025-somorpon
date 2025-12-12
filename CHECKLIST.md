@@ -7,6 +7,7 @@ Use this checklist to verify your hackathon submission is complete.
 ## 📋 Pre-Submission Checklist
 
 ### Prerequisites
+
 - [ ] Node.js >= 24.10.0 installed
 - [ ] npm >= 10.x installed
 - [ ] Docker >= 24.x installed
@@ -18,6 +19,7 @@ Use this checklist to verify your hackathon submission is complete.
 ## 🎯 Milestone 1: S3 Storage Integration (15 points)
 
 ### Implementation
+
 - [x] MinIO service added to `docker/compose.dev.yml`
 - [x] MinIO service added to `docker/compose.prod.yml`
 - [x] MinIO init container for bucket creation
@@ -26,6 +28,7 @@ Use this checklist to verify your hackathon submission is complete.
 - [x] Volumes configured for persistent storage
 
 ### Verification Steps
+
 ```bash
 # 1. Start services
 docker compose -f docker/compose.dev.yml up --build
@@ -55,6 +58,7 @@ npm run test:e2e
 ## 🔄 Milestone 2: CI/CD Pipeline (10 points)
 
 ### Implementation
+
 - [x] Enhanced `.github/workflows/ci.yml`
 - [x] 4-stage pipeline (Lint → Test → Build → Scan)
 - [x] MinIO service in GitHub Actions
@@ -64,6 +68,7 @@ npm run test:e2e
 - [x] CI badge added to README
 
 ### Verification Steps
+
 ```bash
 # 1. Commit changes
 git add .
@@ -90,6 +95,7 @@ git push origin main
 ## 🏗️ Milestone 3: Architecture Design (15 points)
 
 ### Implementation
+
 - [x] `ARCHITECTURE.md` created
 - [x] Problem statement included
 - [x] Architecture diagram included
@@ -124,6 +130,7 @@ Open `ARCHITECTURE.md` and verify it contains:
 ## 📚 Documentation
 
 ### Required Documentation
+
 - [x] `ARCHITECTURE.md` - Architecture design document
 - [x] `README.md` - Updated with CI/CD section
 - [x] `docs/QUICK-START.md` - Quick start guide
@@ -133,6 +140,7 @@ Open `ARCHITECTURE.md` and verify it contains:
 - [x] `docs/README.md` - Documentation index
 
 ### Verification
+
 - [ ] All documentation files exist
 - [ ] Documentation is clear and complete
 - [ ] Code examples are correct
@@ -143,6 +151,7 @@ Open `ARCHITECTURE.md` and verify it contains:
 ## 🧪 Testing
 
 ### Local Testing
+
 ```bash
 # 1. Install dependencies
 npm install
@@ -167,6 +176,7 @@ npm run test:e2e
 - [ ] E2E tests pass
 
 ### API Testing
+
 ```bash
 # Test health endpoint
 curl http://localhost:3000/health
@@ -192,6 +202,7 @@ curl -X POST http://localhost:3000/v1/download/initiate \
 ## 🎬 Demo Preparation
 
 ### Demo Point 1: S3 Storage (15 points)
+
 ```bash
 # Show Docker Compose configuration
 cat docker/compose.dev.yml
@@ -215,12 +226,14 @@ npm run test:e2e
 - [ ] Can run and pass E2E tests
 
 ### Demo Point 2: CI/CD Pipeline (25 points total)
+
 - [ ] Can show GitHub Actions page
 - [ ] Can explain each pipeline stage
 - [ ] Can show all stages passing
 - [ ] Can show Docker image in packages
 
 ### Demo Point 3: Architecture Design (40 points total)
+
 - [ ] Can walk through ARCHITECTURE.md
 - [ ] Can explain the architecture diagram
 - [ ] Can justify the hybrid SSE + polling approach
@@ -231,19 +244,20 @@ npm run test:e2e
 
 ## 📊 Points Summary
 
-| Milestone | Points | Status |
-|-----------|--------|--------|
-| Milestone 1: S3 Storage | 15 | ✅ Complete |
-| Milestone 2: CI/CD Pipeline | 10 | ✅ Complete |
-| Milestone 3: Architecture Design | 15 | ✅ Complete |
-| Milestone 4: Observability (Bonus) | 10 | ⏸️ Not Implemented |
-| **Total** | **40/50** | **80%** |
+| Milestone                          | Points    | Status             |
+| ---------------------------------- | --------- | ------------------ |
+| Milestone 1: S3 Storage            | 15        | ✅ Complete        |
+| Milestone 2: CI/CD Pipeline        | 10        | ✅ Complete        |
+| Milestone 3: Architecture Design   | 15        | ✅ Complete        |
+| Milestone 4: Observability (Bonus) | 10        | ⏸️ Not Implemented |
+| **Total**                          | **40/50** | **80%**            |
 
 ---
 
 ## 🚀 Submission Checklist
 
 ### Before Submitting
+
 - [ ] All code committed to Git
 - [ ] All changes pushed to GitHub
 - [ ] CI/CD pipeline passing
@@ -254,6 +268,7 @@ npm run test:e2e
 - [ ] Demo prepared
 
 ### Submission Package
+
 - [ ] GitHub repository URL
 - [ ] Link to successful CI/CD run
 - [ ] Screenshots of:
@@ -264,6 +279,7 @@ npm run test:e2e
   - Jaeger tracing UI
 
 ### Optional (Bonus Points)
+
 - [ ] Milestone 4: Observability Dashboard implemented
 - [ ] Additional features beyond requirements
 - [ ] Exceptional documentation
