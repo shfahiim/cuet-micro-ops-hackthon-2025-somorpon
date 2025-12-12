@@ -66,6 +66,13 @@ jobs:
             -e MINIO_ROOT_PASSWORD=minioadmin \
             minio/minio:latest server /data
 
+      - name: Start Redis container
+        run: |
+          docker run -d \
+            --name redis \
+            -p 6379:6379 \
+            redis:7-alpine
+
       - name: Wait for MinIO to be ready
         run: |
           echo "Waiting for MinIO to be ready..."
@@ -79,6 +86,21 @@ jobs:
           done
           echo "❌ MinIO failed to start"
           docker logs minio
+          exit 1
+
+      - name: Wait for Redis to be ready
+        run: |
+          echo "Waiting for Redis to be ready..."
+          for i in {1..30}; do
+            if docker exec redis redis-cli ping | grep -q PONG; then
+              echo "✅ Redis is ready!"
+              exit 0
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 1
+          done
+          echo "❌ Redis failed to start"
+          docker logs redis
           exit 1
 
       - name: Create MinIO bucket
@@ -104,10 +126,14 @@ jobs:
           RATE_LIMIT_WINDOW_MS: "60000"
           RATE_LIMIT_MAX_REQUESTS: "100"
           CORS_ORIGINS: "*"
+          REDIS_HOST: localhost
+          REDIS_PORT: "6379"
 
-      - name: Stop MinIO container
+      - name: Stop containers
         if: always()
-        run: docker stop minio && docker rm minio || true
+        run: |
+          docker stop minio redis || true
+          docker rm minio redis || true
 
   # ==========================================
   # STAGE 3: Build Docker Image
