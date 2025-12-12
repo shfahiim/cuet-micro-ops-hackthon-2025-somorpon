@@ -1,5 +1,38 @@
 # Delineate Hackathon Challenge - CUET Fest 2025
 
+## 🔄 CI/CD
+
+[![CI/CD Pipeline](https://github.com/shfahiim/cuet-micro-ops-hackthon-2025-somorpon/actions/workflows/ci.yml/badge.svg)](https://github.com/shfahiim/cuet-micro-ops-hackthon-2025-somorpon/actions/workflows/ci.yml)
+
+### Pipeline Stages
+
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│  🔍 Lint    │───▶│  🧪 Test    │───▶│  🐳 Build   │───▶│  🔒 Scan    │
+│  ESLint +   │    │  E2E with   │    │  Docker     │    │  Trivy      │
+│  Prettier   │    │  MinIO      │    │  Image      │    │  Security   │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+```
+
+### Running Tests Locally
+
+```bash
+# Install dependencies
+npm install
+
+# Run linting
+npm run lint
+
+# Check formatting
+npm run format:check
+
+# Run E2E tests (with Docker MinIO)
+npm run docker:dev  # Start services first
+npm run test:e2e
+```
+
+---
+
 ## The Scenario
 
 This microservice simulates a **real-world file download system** where processing times vary significantly:
