@@ -1,0 +1,38 @@
+
+======================================
+1. Server Availability Check
+======================================
+✓ PASS: Server is reachable at http://localhost:3000
+
+======================================
+2. Root Endpoint (/) Latency Test
+======================================
+ℹ INFO: Requirement: < 10ms average (localhost)
+Average latency: 1.46ms
+✓ PASS: Root endpoint latency: 1.46ms (< 10ms)
+
+======================================
+3. Health Endpoint (/health) Latency Test
+======================================
+ℹ INFO: Requirement: < 100ms average
+Average latency: 3.42ms
+✓ PASS: Health endpoint latency: 3.42ms (< 100ms)
+
+======================================
+4. Download Initiate Endpoint Latency Test
+======================================
+ℹ INFO: Requirement: < 10ms average (localhost - should return immediately)
+Average latency: 1.64ms
+✓ PASS: Download initiate latency: 1.64ms (< 10ms)
+
+======================================
+5. Download Check Endpoint Latency Test
+======================================
+ℹ INFO: Requirement: < 100ms average (includes S3 HEAD request)
+Average latency: 4.32ms
+✓ PASS: Download check latency: 4.32ms (< 100ms)
+
+======================================
+6. Rate Limiting Test
+======================================
+ℹ INFO: Requirement: 100 requests per minute per IP

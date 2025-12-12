@@ -619,21 +619,22 @@ app.openapi(downloadStartRoute, async (c) => {
   }
 });
 
-// OpenAPI spec endpoint (disabled in production)
-if (env.NODE_ENV !== "production") {
-  app.doc("/openapi", {
-    openapi: "3.0.0",
-    info: {
-      title: "Delineate Hackathon Challenge API",
-      version: "1.0.0",
-      description: "API for Delineate Hackathon Challenge",
-    },
-    servers: [{ url: "http://localhost:3000", description: "Local server" }],
-  });
+// OpenAPI spec endpoint
+app.doc("/openapi", {
+  openapi: "3.0.0",
+  info: {
+    title: "Delineate Hackathon Challenge API",
+    version: "1.0.0",
+    description: "API for Delineate Hackathon Challenge",
+  },
+  servers: [
+    { url: "http://localhost:3000", description: "Local server" },
+    { url: "https://your-domain.com", description: "Production server" },
+  ],
+});
 
-  // Scalar API docs
-  app.get("/docs", Scalar({ url: "/openapi" }));
-}
+// Scalar API docs
+app.get("/docs", Scalar({ url: "/openapi" }))
 
 // Graceful shutdown handler
 const gracefulShutdown = (server: ServerType) => (signal: string) => {
@@ -670,9 +671,8 @@ const server = serve(
   (info) => {
     console.log(`Server is running on http://localhost:${String(info.port)}`);
     console.log(`Environment: ${env.NODE_ENV}`);
-    if (env.NODE_ENV !== "production") {
-      console.log(`API docs: http://localhost:${String(info.port)}/docs`);
-    }
+    console.log(`API docs: http://localhost:${String(info.port)}/docs`);
+    console.log(`OpenAPI spec: http://localhost:${String(info.port)}/openapi`);
   },
 );
 

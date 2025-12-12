@@ -519,7 +519,7 @@ export function DownloadManager({ fileIds }: { fileIds: number[] }) {
 
 ## 8. Implementation Roadmap
 
-### Phase 1: Backend Infrastructure (Week 1)
+### Phase 1: Backend Infrastructure 
 
 **Tasks:**
 
@@ -535,7 +535,7 @@ export function DownloadManager({ fileIds }: { fileIds: number[] }) {
 - Job status persistence in Redis
 - Basic worker processing
 
-### Phase 2: API Endpoints (Week 1-2)
+### Phase 2: API Endpoints
 
 **Tasks:**
 
@@ -551,7 +551,7 @@ export function DownloadManager({ fileIds }: { fileIds: number[] }) {
 - E2E tests for all endpoints
 - Updated API documentation
 
-### Phase 3: Frontend Integration (Week 2)
+### Phase 3: Frontend Integration 
 
 **Tasks:**
 
@@ -567,7 +567,7 @@ export function DownloadManager({ fileIds }: { fileIds: number[] }) {
 - Real-time progress updates
 - Graceful fallback handling
 
-### Phase 4: Production Hardening (Week 3)
+### Phase 4: Production Hardening 
 
 **Tasks:**
 
