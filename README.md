@@ -17,15 +17,15 @@ curl -X POST http://36.255.70.250:3000/v1/download/check \
 
 ### Access Production Services
 
-| Service           | URL                                  | Credentials              |
-| ----------------- | ------------------------------------ | ------------------------ |
-| 🌐 API Server     | http://36.255.70.250:3000            | -                        |
-| 📚 API Docs       | http://36.255.70.250:3000/docs       | -                        |
-| 🔍 Jaeger UI      | http://36.255.70.250:16686           | -                        |
-| 📦 MinIO Console  | http://36.255.70.250:9001            | minioadmin / minioadmin  |
-| 📊 MinIO API      | http://36.255.70.250:9000            | minioadmin / minioadmin  |
-## 🔄 CI/CD
+| Service          | URL                            | Credentials             |
+| ---------------- | ------------------------------ | ----------------------- |
+| 🌐 API Server    | http://36.255.70.250:3000      | -                       |
+| 📚 API Docs      | http://36.255.70.250:3000/docs | -                       |
+| 🔍 Jaeger UI     | http://36.255.70.250:16686     | -                       |
+| 📦 MinIO Console | http://36.255.70.250:9001      | minioadmin / minioadmin |
+| 📊 MinIO API     | http://36.255.70.250:9000      | minioadmin / minioadmin |
 
+## 🔄 CI/CD
 
 ### Run Locally with Docker
 
@@ -70,6 +70,7 @@ npm run worker:dev
 ```
 
 # Run comprehensive E2E tests against production serve
+
 ## 🔄 CI/CD
 
 [![CI/CD Pipeline](https://github.com/shfahiim/cuet-micro-ops-hackthon-2025-somorpon/actions/workflows/ci.yml/badge.svg)](https://github.com/shfahiim/cuet-micro-ops-hackthon-2025-somorpon/actions/workflows/ci.yml)
@@ -718,18 +719,18 @@ DOWNLOAD_DELAY_MAX_MS=200000
 
 ### Endpoints Overview
 
-| Method | Endpoint                       | Description                         |
-| ------ | ------------------------------ | ----------------------------------- |
-| GET    | `/`                            | Welcome message                     |
-| GET    | `/health`                      | Health check with storage status    |
-| GET    | `/docs`                        | Interactive API documentation       |
-| GET    | `/openapi`                     | OpenAPI specification (JSON)        |
-| POST   | `/v1/download/initiate`        | Initiate async bulk download job    |
-| GET    | `/v1/download/status/:jobId`   | Check job status (polling)          |
-| GET    | `/v1/download/stream/:jobId`   | SSE stream for real-time updates    |
-| GET    | `/v1/download/:jobId`          | Download completed files            |
-| POST   | `/v1/download/check`           | Check single file availability      |
-| POST   | `/v1/download/start`           | Start download with simulated delay |
+| Method | Endpoint                     | Description                         |
+| ------ | ---------------------------- | ----------------------------------- |
+| GET    | `/`                          | Welcome message                     |
+| GET    | `/health`                    | Health check with storage status    |
+| GET    | `/docs`                      | Interactive API documentation       |
+| GET    | `/openapi`                   | OpenAPI specification (JSON)        |
+| POST   | `/v1/download/initiate`      | Initiate async bulk download job    |
+| GET    | `/v1/download/status/:jobId` | Check job status (polling)          |
+| GET    | `/v1/download/stream/:jobId` | SSE stream for real-time updates    |
+| GET    | `/v1/download/:jobId`        | Download completed files            |
+| POST   | `/v1/download/check`         | Check single file availability      |
+| POST   | `/v1/download/start`         | Start download with simulated delay |
 
 ### API Usage Examples
 
@@ -841,23 +842,23 @@ wget http://36.255.70.250:3000/v1/download/{jobId}
 
 ### Request Headers
 
-| Header            | Required | Description                              |
-| ----------------- | -------- | ---------------------------------------- |
-| `Content-Type`    | Yes      | Must be `application/json` for POST      |
-| `X-Request-ID`    | No       | Custom request ID for tracing            |
+| Header         | Required | Description                         |
+| -------------- | -------- | ----------------------------------- |
+| `Content-Type` | Yes      | Must be `application/json` for POST |
+| `X-Request-ID` | No       | Custom request ID for tracing       |
 
 ### Response Headers
 
 All responses include:
 
-| Header                        | Description                              |
-| ----------------------------- | ---------------------------------------- |
-| `X-Request-ID`                | Request ID for distributed tracing       |
-| `RateLimit-Limit`             | Maximum requests allowed in window       |
-| `RateLimit-Remaining`         | Remaining requests in current window     |
-| `X-Content-Type-Options`      | Security header: `nosniff`               |
-| `X-Frame-Options`             | Security header: `DENY`                  |
-| `Strict-Transport-Security`   | HSTS header for HTTPS enforcement        |
+| Header                      | Description                          |
+| --------------------------- | ------------------------------------ |
+| `X-Request-ID`              | Request ID for distributed tracing   |
+| `RateLimit-Limit`           | Maximum requests allowed in window   |
+| `RateLimit-Remaining`       | Remaining requests in current window |
+| `X-Content-Type-Options`    | Security header: `nosniff`           |
+| `X-Frame-Options`           | Security header: `DENY`              |
+| `Strict-Transport-Security` | HSTS header for HTTPS enforcement    |
 
 ### Testing the Long-Running Download
 
